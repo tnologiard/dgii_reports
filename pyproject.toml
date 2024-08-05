@@ -1,0 +1,20 @@
+[project]
+name = "dgii_reports"
+authors = [
+    { name = "TnologiaRD", email = "tnologiard@gmail.com"}
+]
+description = "La aplicación `dgii_reports` facilita a los contribuyentes el reporte de informaciones a la Dirección General de Impuestos Internos (DGII) sobre sus operaciones en fechas específicas. Esta herramienta automatiza la recopilación, organización y envío de los datos requeridos, asegurando el cumplimiento con las obligaciones fiscales y simplificando el proceso de presentación de informes a la DGII."
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    # "frappe~=15.0.0" # Installed and managed by bench.
+]
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+# These dependencies are only installed when developer mode is enabled
+[tool.bench.dev-dependencies]
+# package_name = "~=1.1.0"
