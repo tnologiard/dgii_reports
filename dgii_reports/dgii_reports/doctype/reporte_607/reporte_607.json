@@ -1,0 +1,60 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-08-07 19:10:55.912918",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "from_date",
+  "to_date",
+  "run_report",
+  "set_right_ids"
+ ],
+ "fields": [
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date"
+  },
+  {
+   "fieldname": "run_report",
+   "fieldtype": "Button",
+   "label": "Run Report"
+  },
+  {
+   "fieldname": "set_right_ids",
+   "fieldtype": "Button",
+   "hidden": 1,
+   "label": "Run",
+   "options": "set_right_ids"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-08-08 04:19:00.700987",
+ "modified_by": "Administrator",
+ "module": "Dgii Reports",
+ "name": "Reporte 607",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,50 @@
+[
+ {
+  "codigo": "06",
+  "docstatus": 0,
+  "doctype": "Tipo de Ingreso",
+  "modified": "2024-08-07 16:03:17.959103",
+  "name": "Otros Ingresos",
+  "tipo_de_ingreso": "Otros Ingresos"
+ },
+ {
+  "codigo": "05",
+  "docstatus": 0,
+  "doctype": "Tipo de Ingreso",
+  "modified": "2024-08-07 16:04:17.177582",
+  "name": "Ingresos por Venta de Activo Depreciable",
+  "tipo_de_ingreso": "Ingresos por Venta de Activo Depreciable"
+ },
+ {
+  "codigo": "04",
+  "docstatus": 0,
+  "doctype": "Tipo de Ingreso",
+  "modified": "2024-08-07 16:04:42.711457",
+  "name": "Ingresos por Arrendamientos",
+  "tipo_de_ingreso": "Ingresos por Arrendamientos"
+ },
+ {
+  "codigo": "03",
+  "docstatus": 0,
+  "doctype": "Tipo de Ingreso",
+  "modified": "2024-08-07 16:05:06.491280",
+  "name": "Ingresos Extraordinarios",
+  "tipo_de_ingreso": "Ingresos Extraordinarios"
+ },
+ {
+  "codigo": "02",
+  "docstatus": 0,
+  "doctype": "Tipo de Ingreso",
+  "modified": "2024-08-07 16:05:26.855734",
+  "name": "Ingresos Financieros",
+  "tipo_de_ingreso": "Ingresos Financieros"
+ },
+ {
+  "codigo": "01",
+  "docstatus": 0,
+  "doctype": "Tipo de Ingreso",
+  "modified": "2024-08-07 16:05:55.698929",
+  "name": "Ingresos por Operaciones (No Financieros)",
+  "tipo_de_ingreso": "Ingresos por Operaciones (No Financieros)"
+ }
+]

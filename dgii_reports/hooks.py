@@ -7,7 +7,6 @@ app_license = "mit"
 # required_apps = []
 
 # Includes in <head>
-# ------------------
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/dgii_reports/css/dgii_reports.css"
@@ -29,6 +28,10 @@ app_license = "mit"
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+	"Customer": "public/js/customer.js",
+}
+
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -122,13 +125,13 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "Sales Invoice": {
+        "autoname": "dgii_reports.hook.sales_invoice.autoname",
+        "before_insert": "dgii_reports.hook.sales_invoice.before_insert",
+        "on_change": "dgii_reports.hook.sales_invoice.on_change",
+    }
+}
 
 # Scheduled Tasks
 # ---------------
@@ -227,3 +230,9 @@ app_license = "mit"
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+fixtures = [
+    "Tipo Comprobante Fiscal",
+    "Notification",
+    "Tipo de Ingreso",
+    {"dt":"Custom Field", "filters":[["module","=","Dgii Reports"]]},
+]

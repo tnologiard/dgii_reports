@@ -1,0 +1,98 @@
+[
+ {
+  "codigo": "01",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:49:11.495377",
+  "name": "Factura de Crédito Fiscal-01",
+  "tipo_comprobante": "Factura de Crédito Fiscal"
+ },
+ {
+  "codigo": "02",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:50:53.155431",
+  "name": "Factura de Consumo-02",
+  "tipo_comprobante": "Factura de Consumo"
+ },
+ {
+  "codigo": "03",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:51:22.429544",
+  "name": "Notas de Débito-03",
+  "tipo_comprobante": "Notas de Débito"
+ },
+ {
+  "codigo": "04",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:51:40.420392",
+  "name": "Notas de Crédito-04",
+  "tipo_comprobante": "Notas de Crédito"
+ },
+ {
+  "codigo": "11",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:52:02.310960",
+  "name": "Comprobante de Compras-11",
+  "tipo_comprobante": "Comprobante de Compras"
+ },
+ {
+  "codigo": "12",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:52:19.158923",
+  "name": "Comprobante de Registro Único de Ingresos-12",
+  "tipo_comprobante": "Comprobante de Registro Único de Ingresos"
+ },
+ {
+  "codigo": "13",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:52:43.422619",
+  "name": "Comprobante para Gastos Menores-13",
+  "tipo_comprobante": "Comprobante para Gastos Menores"
+ },
+ {
+  "codigo": "14",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:52:58.060257",
+  "name": "Comprobante para Regímenes Especiales-14",
+  "tipo_comprobante": "Comprobante para Regímenes Especiales"
+ },
+ {
+  "codigo": "15",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:53:12.998988",
+  "name": "Comprobante Gubernamental-15",
+  "tipo_comprobante": "Comprobante Gubernamental"
+ },
+ {
+  "codigo": "16",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:53:29.596689",
+  "name": "Comprobante para Exportaciones-16",
+  "tipo_comprobante": "Comprobante para Exportaciones"
+ },
+ {
+  "codigo": "17",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:54:03.226169",
+  "name": "Comprobante para Pagos al Exterior-17",
+  "tipo_comprobante": "Comprobante para Pagos al Exterior"
+ },
+ {
+  "codigo": "e-CF",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:54:25.849122",
+  "name": "Comprobante Fiscal Electrónico-e-CF",
+  "tipo_comprobante": "Comprobante Fiscal Electrónico"
+ }
+]
