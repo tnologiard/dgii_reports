@@ -30,6 +30,8 @@ app_license = "mit"
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 doctype_js = {
 	"Customer": "public/js/customer.js",
+    "Supplier": "public/js/supplier.js",
+    "Purchase Invoice": "public/js/purchase_invoice.js",
 }
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
@@ -232,7 +234,6 @@ doc_events = {
 
 fixtures = [
     "Tipo Comprobante Fiscal",
-    "Notification",
     "Tipo de Ingreso",
     {"dt":"Custom Field", "filters":[["module","=","Dgii Reports"]]},
 ]
