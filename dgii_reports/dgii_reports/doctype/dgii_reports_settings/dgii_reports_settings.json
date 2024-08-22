@@ -1,0 +1,84 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-08-13 02:37:36.908931",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "legal_tip_account",
+  "itbis_account",
+  "column_break_xwjp",
+  "excise_tax",
+  "other_taxes_sb",
+  "other_taxes",
+  "update_taxes"
+ ],
+ "fields": [
+  {
+   "fieldname": "legal_tip_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Legal Tip Account",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "bold": 1,
+   "fieldname": "itbis_account",
+   "fieldtype": "Link",
+   "label": "ITBIS Account",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_xwjp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "excise_tax",
+   "fieldtype": "Link",
+   "label": "Excise Tax",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "other_taxes_sb",
+   "fieldtype": "Section Break",
+   "label": "Other Taxes"
+  },
+  {
+   "fieldname": "other_taxes",
+   "fieldtype": "Table",
+   "label": "Other Taxes",
+   "options": "Other Tax Detail"
+  },
+  {
+   "fieldname": "update_taxes",
+   "fieldtype": "Button",
+   "label": "Update Taxes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-08-13 03:12:01.147312",
+ "modified_by": "Administrator",
+ "module": "Dgii Reports",
+ "name": "DGII Reports Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
