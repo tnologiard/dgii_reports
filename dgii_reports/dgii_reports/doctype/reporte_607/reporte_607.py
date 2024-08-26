@@ -41,3 +41,4 @@ def get_file_address(from_date, to_date):
 	frappe.response['result'] = cstr(w.getvalue())
 	frappe.response['type'] = 'csv'
 	frappe.response['doctype'] = "Reporte_607_" + str(int(time.time()))
+
