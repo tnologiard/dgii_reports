@@ -131,6 +131,7 @@ doc_events = {
     "Sales Invoice": {
         "autoname": "dgii_reports.hook.sales_invoice.autoname",
         "before_insert": "dgii_reports.hook.sales_invoice.before_insert",
+        "before_submit": "dgii_reports.hook.sales_invoice.before_submit",
         "on_change": "dgii_reports.hook.sales_invoice.on_change",
     }
 }
