@@ -1,5 +1,6 @@
 import frappe
 from dgii_reports.servicios.consultas_web_dgii import ServicioConsultasWebDgii
+from erpnext.controllers.sales_and_purchase_return import make_return_doc
 
 @frappe.whitelist()
 def get_rnc_details(tax_id):
@@ -47,3 +48,13 @@ def get_ncf_details(ncf, rnc, my_rnc=None, sec_code=None, req_sec_code=False):
         return {
             "error": f"Ocurrió un error: {str(e)}"
         }
+
+@frappe.whitelist()
+def make_sales_return(source_name, target_doc=None):
+    doc = make_return_doc("Sales Invoice", source_name, target_doc)
+
+    # Establecer el campo custom_tipo_de_factura a "04-Notas de Crédito"
+    doc.custom_tipo_de_factura = "04-Notas de Crédito"
+    doc.custom_ncf = ''
+
+    return doc
