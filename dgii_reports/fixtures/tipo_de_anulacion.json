@@ -1,0 +1,82 @@
+[
+ {
+  "codigo": "01",
+  "docstatus": 0,
+  "doctype": "Tipo de Anulacion",
+  "modified": "2024-09-02 13:47:20.391264",
+  "name": "01 Deterioro de Factura Pre-Impresa",
+  "tipo_de_anulacion": "Deterioro de Factura Pre-Impresa"
+ },
+ {
+  "codigo": "02",
+  "docstatus": 0,
+  "doctype": "Tipo de Anulacion",
+  "modified": "2024-09-02 13:48:01.649443",
+  "name": "02 Errores de Impresión (Factura Pre-Impresa)",
+  "tipo_de_anulacion": "Errores de Impresión (Factura Pre-Impresa)"
+ },
+ {
+  "codigo": "03",
+  "docstatus": 0,
+  "doctype": "Tipo de Anulacion",
+  "modified": "2024-09-02 13:48:18.409588",
+  "name": "03 Impresión Defectuosa",
+  "tipo_de_anulacion": "Impresión Defectuosa\t"
+ },
+ {
+  "codigo": "04",
+  "docstatus": 0,
+  "doctype": "Tipo de Anulacion",
+  "modified": "2024-09-02 13:48:37.813247",
+  "name": "04 Corrección de la Información",
+  "tipo_de_anulacion": "Corrección de la Información\t"
+ },
+ {
+  "codigo": "05",
+  "docstatus": 0,
+  "doctype": "Tipo de Anulacion",
+  "modified": "2024-09-02 13:48:55.103718",
+  "name": "05 Cambio de Productos",
+  "tipo_de_anulacion": "Cambio de Productos\t"
+ },
+ {
+  "codigo": "06",
+  "docstatus": 0,
+  "doctype": "Tipo de Anulacion",
+  "modified": "2024-09-02 13:49:15.239894",
+  "name": "06 Devolución de Productos",
+  "tipo_de_anulacion": "Devolución de Productos\t"
+ },
+ {
+  "codigo": "07",
+  "docstatus": 0,
+  "doctype": "Tipo de Anulacion",
+  "modified": "2024-09-02 13:49:30.920762",
+  "name": "07 Omisión de Productos",
+  "tipo_de_anulacion": "Omisión de Productos\t"
+ },
+ {
+  "codigo": "08",
+  "docstatus": 0,
+  "doctype": "Tipo de Anulacion",
+  "modified": "2024-09-02 13:49:50.320058",
+  "name": "08 Errores en Secuencias de NCF",
+  "tipo_de_anulacion": "Errores en Secuencias de NCF\t"
+ },
+ {
+  "codigo": "09",
+  "docstatus": 0,
+  "doctype": "Tipo de Anulacion",
+  "modified": "2024-09-02 13:50:11.456649",
+  "name": "09 Por Cese de Operaciones",
+  "tipo_de_anulacion": "Por Cese de Operaciones\t"
+ },
+ {
+  "codigo": "10",
+  "docstatus": 0,
+  "doctype": "Tipo de Anulacion",
+  "modified": "2024-09-02 13:50:27.443595",
+  "name": "10 Pérdida O Hurto De Talonario(S)",
+  "tipo_de_anulacion": "Pérdida O Hurto De Talonario(S)\t"
+ }
+]

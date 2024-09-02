@@ -1,35 +1,11 @@
 [
  {
-  "codigo": "01",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:49:11.495377",
-  "name": "Factura de Crédito Fiscal-01",
-  "tipo_comprobante": "Factura de Crédito Fiscal"
- },
- {
   "codigo": "02",
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:50:53.155431",
   "name": "Factura de Consumo-02",
   "tipo_comprobante": "Factura de Consumo"
- },
- {
-  "codigo": "03",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:51:22.429544",
-  "name": "Notas de Débito-03",
-  "tipo_comprobante": "Notas de Débito"
- },
- {
-  "codigo": "04",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:51:40.420392",
-  "name": "Notas de Crédito-04",
-  "tipo_comprobante": "Notas de Crédito"
  },
  {
   "codigo": "11",
@@ -94,5 +70,29 @@
   "modified": "2024-08-07 03:54:25.849122",
   "name": "Comprobante Fiscal Electrónico-e-CF",
   "tipo_comprobante": "Comprobante Fiscal Electrónico"
+ },
+ {
+  "codigo": "03",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:51:22.429544",
+  "name": "Notas de Débito-03",
+  "tipo_comprobante": "Notas de Débito"
+ },
+ {
+  "codigo": "04",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:51:40.420392",
+  "name": "Notas de Crédito-04",
+  "tipo_comprobante": "Notas de Crédito"
+ },
+ {
+  "codigo": "01",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:49:11.495377",
+  "name": "Factura de Crédito Fiscal-01",
+  "tipo_comprobante": "Factura de Crédito Fiscal"
  }
 ]

@@ -32,6 +32,7 @@ doctype_js = {
 	"Customer": "public/js/customer.js",
     "Supplier": "public/js/supplier.js",
     "Purchase Invoice": "public/js/purchase_invoice.js",
+    "Sales Invoice": "public/js/sales_invoice.js",
 }
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
@@ -128,6 +129,10 @@ doctype_js = {
 # Hook on document methods and events
 
 doc_events = {
+    "Purchase Invoice": {
+		"validate": "dgii_reports.hook.purchase_invoice.validate",
+		"before_submit": "dgii_reports.hook.purchase_invoice.before_submit",
+	},
     "Sales Invoice": {
         "autoname": "dgii_reports.hook.sales_invoice.autoname",
         "before_insert": "dgii_reports.hook.sales_invoice.before_insert",
@@ -237,5 +242,7 @@ override_whitelisted_methods = {
 fixtures = [
     "Tipo Comprobante Fiscal",
     "Tipo de Ingreso",
+    "Tipo de Anulacion",
     {"dt":"Custom Field", "filters":[["module","=","Dgii Reports"]]},
+    {"dt":"Property Setter", "filters":[["module","=","Dgii Reports"]]},
 ]

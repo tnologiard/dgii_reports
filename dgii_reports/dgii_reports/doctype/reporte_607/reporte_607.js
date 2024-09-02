@@ -18,11 +18,9 @@ frappe.ui.form.on("Reporte 607", {
             callback: function(response) {
                 console.log("Respuesta del servidor:", response);
                 if (response.message && response.message.message !== "") {
-                    console.log("Mensaje de advertencia:", response.message.message);
                     // Si hay un mensaje de advertencia, mostrarlo al usuario
                     frappe.msgprint(response.message.message);
                 } else {
-                    console.log("No hay mensaje de advertencia, generando reporte");
                     // Si no hay advertencia, abrir el archivo
                     var file_url = __("/api/method/dgii_reports.dgii_reports.doctype.reporte_607.reporte_607.get_file_address?from_date={0}&to_date={1}", 
                         [frm.doc.from_date, frm.doc.to_date]);
