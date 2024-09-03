@@ -61,13 +61,11 @@ def get_file_address(from_date, to_date, decimal_places=2):
     SELECT 
         sinv.custom_ncf as ncf, 
         sinv.posting_date as fecha_comprobante,
-        tipo_anul.codigo as tipo_anulacion  -- Recuperar la columna codigo de la tabla tabTipo de Anulacion
+        sinv.custom_codigo_de_anulacion  as tipo_anulacion  -- Recuperar la columna codigo de la tabla tabTipo de Anulacion
     FROM 
         `tabSales Invoice` AS sinv 
-    LEFT JOIN 
-        `tabTipo de Anulacion` AS tipo_anul ON sinv.custom_tipo_de_anulacion = tipo_anul.tipo_de_anulacion
     WHERE 
-        sinv.custom_ncf NOT LIKE 'SINV-%%' AND sinv.docstatus = 1 AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
+        sinv.docstatus = 2 AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
     """
 
     # Ejecutar la consulta
