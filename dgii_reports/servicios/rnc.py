@@ -20,8 +20,14 @@ InvalidChecksum: ...
 import json
 
 from stdnum.exceptions import *
-from stdnum.util import clean, get_soap_client, isdigits
+from stdnum.util import clean, isdigits
 
+from zeep import Client, Transport
+import requests
+import urllib3
+
+# Deshabilitar advertencias de SSL
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Lista de RNC que no coinciden con el checksum pero que son válidos
 whitelist = set('''
@@ -35,6 +41,14 @@ whitelist = set('''
 dgii_wsdl = 'https://www.dgii.gov.do/wsMovilDGII/WSMovilDGII.asmx?WSDL'
 """La URL WSDL del servicio de validación de la DGII."""
 
+
+def get_soap_client(wsdl_url, timeout=30):
+    """Crea un cliente SOAP utilizando Zeep y deshabilitando la verificación SSL."""
+    session = requests.Session()
+    session.verify = False
+    transport = Transport(session=session, timeout=timeout)
+    return Client(wsdl=wsdl_url, transport=transport)
+    
 
 def compact(number):
     """Convierte el número a su representación mínima. Esto elimina los
