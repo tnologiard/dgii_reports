@@ -18,7 +18,7 @@ InvalidFormat: ...
 """
 
 from stdnum import luhn
-from stdnum.do import rnc
+from .rnc import rnc
 from stdnum.exceptions import *
 from stdnum.util import clean, isdigits
 
