@@ -48,7 +48,7 @@ def get_soap_client(wsdl_url, timeout=30):
     session.verify = False
     transport = Transport(session=session, timeout=timeout)
     return Client(wsdl=wsdl_url, transport=transport)
-    
+
 
 def compact(number):
     """Convierte el número a su representación mínima. Esto elimina los
