@@ -10,7 +10,7 @@ def validate(doc, event):
     """Función para validar el documento antes de cualquier acción."""
     set_taxes(doc)
     calculate_totals(doc)
-    # validate_duplicate_ncf(doc)
+    validate_duplicate_ncf(doc)
 
 def before_submit(doc, event):
     """Función que se ejecuta antes de enviar el documento."""
