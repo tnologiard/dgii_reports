@@ -242,6 +242,7 @@ fixtures = [
     "Tipo Comprobante Fiscal",
     "Tipo de Ingreso",
     "Tipo de Anulacion",
+    # "Mode of Payment",
     {"dt":"Custom Field", "filters":[["module","=","Dgii Reports"]]},
     {"dt":"Property Setter", "filters":[["module","=","Dgii Reports"]]},
 ]

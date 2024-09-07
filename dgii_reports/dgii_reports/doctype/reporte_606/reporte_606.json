@@ -7,6 +7,7 @@
  "field_order": [
   "from_date",
   "to_date",
+  "format",
   "run_report"
  ],
  "fields": [
@@ -24,12 +25,19 @@
    "fieldname": "run_report",
    "fieldtype": "Button",
    "label": "Run Report"
+  },
+  {
+   "default": "Excel",
+   "fieldname": "format",
+   "fieldtype": "Select",
+   "label": "Seleccione un formato",
+   "options": "Excel\nTexto"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-08-10 04:38:22.923080",
+ "modified": "2024-09-06 18:33:41.598727",
  "modified_by": "Administrator",
  "module": "Dgii Reports",
  "name": "Reporte 606",

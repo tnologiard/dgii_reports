@@ -1,4 +1,16 @@
 frappe.ui.form.on("Purchase Invoice", {
+    onload: function(frm) {
+        // Recuperar el valor de isr del Doctype DGII Reports Settings
+        frappe.db.get_single_value('DGII Reports Settings', 'isr')
+            .then(value => {
+                console.log("ISR value:", value);
+                frm.doc.isr = value;
+                check_retention_type_visibility(frm);
+            });
+    },
+    refresh: function(frm) {
+        check_retention_type_visibility(frm);
+    },
     // Se ejecuta cuando se valida el formulario antes de guardar
     validate(frm) {
         // Llama a las funciones de validación y ajuste de campos específicos
@@ -161,3 +173,31 @@ frappe.ui.form.on("Purchase Invoice", {
         frm.set_value("isr_amount", amount);
     }
 });
+
+frappe.ui.form.on('Purchase Taxes and Charges', {
+    account_head: function(frm, cdt, cdn) {
+        check_retention_type_visibility(frm);
+    },
+    taxes_remove: function(frm) {
+        check_retention_type_visibility(frm);
+    },
+    taxes_add: function(frm) {
+        check_retention_type_visibility(frm);
+    }
+});
+
+function check_retention_type_visibility(frm) {
+    console.log("Checking retention type visibility");
+    let show_retention_type = false;
+    const isr = frm.doc.isr;
+
+    frm.doc.taxes.forEach(function(tax) {
+        console.log("Tax account head:", tax.account_head);
+        if (tax.account_head === isr) {
+            show_retention_type = true;
+        }
+    });
+
+    frm.toggle_display('retention_type', show_retention_type);
+    frm.toggle_reqd('retention_type', show_retention_type);
+}

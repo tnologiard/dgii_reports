@@ -180,7 +180,11 @@ def validate_unique_ncf_by_supplier(supplier, ncf):
 
 def validate_ncf_with_dgii(rnc, ncf, my_rnc=None, sec_code=None, req_sec_code=False):
     """Valida el NCF con la DGII."""
-    # return True
+    no_validar_ncf = frappe.db.get_single_value('DGII Reports Settings', 'no_validar_ncf')
+    
+    if no_validar_ncf:
+        return True
+    
     try:
         servicio = ServicioConsultasWebDgii()
         respuesta = servicio.consultar_ncf(ncf, rnc, my_rnc=my_rnc, sec_code=sec_code, req_sec_code=req_sec_code)

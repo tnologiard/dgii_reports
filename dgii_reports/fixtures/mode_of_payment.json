@@ -1,0 +1,79 @@
+[
+ {
+  "accounts": [],
+  "custom_codigo": "01",
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "EFECTIVO",
+  "modified": "2024-09-05 17:02:17.739840",
+  "name": "01 - EFECTIVO",
+  "type": "Cash"
+ },
+ {
+  "accounts": [],
+  "custom_codigo": "02",
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "CHEQUES/TRANSFERENCIAS/DEPÓSITO",
+  "modified": "2024-09-05 17:34:37.087692",
+  "name": "02 - CHEQUES/TRANSFERENCIAS/DEPÓSITO",
+  "type": "Bank"
+ },
+ {
+  "accounts": [],
+  "custom_codigo": "03",
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "TARJETA CRÉDITO/DÉBITO",
+  "modified": "2024-09-05 17:34:52.682521",
+  "name": "03 - TARJETA CRÉDITO/DÉBITO",
+  "type": "Bank"
+ },
+ {
+  "accounts": [],
+  "custom_codigo": "04",
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "COMPRA A CREDITO",
+  "modified": "2024-09-05 17:35:13.540059",
+  "name": "04 - COMPRA A CREDITO",
+  "type": "Bank"
+ },
+ {
+  "accounts": [],
+  "custom_codigo": "05",
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "PERMUTA",
+  "modified": "2024-09-05 17:35:26.482381",
+  "name": "05 - PERMUTA",
+  "type": "General"
+ },
+ {
+  "accounts": [],
+  "custom_codigo": "06",
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "NOTA DE CREDITO",
+  "modified": "2024-09-05 17:35:37.139579",
+  "name": "06 - NOTA DE CREDITO",
+  "type": "General"
+ },
+ {
+  "accounts": [],
+  "custom_codigo": "07",
+  "docstatus": 0,
+  "doctype": "Mode of Payment",
+  "enabled": 1,
+  "mode_of_payment": "MIXTO",
+  "modified": "2024-09-05 17:35:47.728580",
+  "name": "07 - MIXTO",
+  "type": "General"
+ }
+]

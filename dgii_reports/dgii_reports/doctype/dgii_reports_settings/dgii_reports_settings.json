@@ -5,6 +5,19 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "cuentas_606_tab",
+  "impuestos_column",
+  "itbis_facturado",
+  "itbis_proporcionalidad",
+  "itbis_costo",
+  "isc",
+  "otros_impuestos",
+  "propina_legal",
+  "retenciones_column",
+  "itbis_retenido",
+  "isr",
+  "otras_configuraciones_tab",
+  "no_validar_ncf",
   "legal_tip_account",
   "itbis_account",
   "column_break_xwjp",
@@ -17,18 +30,18 @@
   {
    "fieldname": "legal_tip_account",
    "fieldtype": "Link",
+   "hidden": 1,
    "in_list_view": 1,
    "label": "Legal Tip Account",
-   "options": "Account",
-   "reqd": 1
+   "options": "Account"
   },
   {
    "bold": 1,
    "fieldname": "itbis_account",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "ITBIS Account",
-   "options": "Account",
-   "reqd": 1
+   "options": "Account"
   },
   {
    "fieldname": "column_break_xwjp",
@@ -37,13 +50,14 @@
   {
    "fieldname": "excise_tax",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Excise Tax",
-   "options": "Account",
-   "reqd": 1
+   "options": "Account"
   },
   {
    "fieldname": "other_taxes_sb",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "Other Taxes"
   },
   {
@@ -56,12 +70,94 @@
    "fieldname": "update_taxes",
    "fieldtype": "Button",
    "label": "Update Taxes"
+  },
+  {
+   "default": "0",
+   "fieldname": "no_validar_ncf",
+   "fieldtype": "Check",
+   "label": "Deshabilitar validaci\u00f3n de NCF en compras y ventas"
+  },
+  {
+   "fieldname": "cuentas_606_tab",
+   "fieldtype": "Tab Break",
+   "label": "Cuentas 606"
+  },
+  {
+   "fieldname": "itbis_facturado",
+   "fieldtype": "Link",
+   "label": "ITBIS Facturado",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "impuestos_column",
+   "fieldtype": "Column Break",
+   "label": "Impuestos"
+  },
+  {
+   "fieldname": "itbis_retenido",
+   "fieldtype": "Link",
+   "label": "ITBIS Retenido",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "retenciones_column",
+   "fieldtype": "Column Break",
+   "label": "Retenciones"
+  },
+  {
+   "fieldname": "itbis_proporcionalidad",
+   "fieldtype": "Link",
+   "label": "ITBIS sujeto a Proporcionalidad (Art. 349)",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "itbis_costo",
+   "fieldtype": "Link",
+   "label": "ITBIS llevado al Costo",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "isc",
+   "fieldtype": "Link",
+   "label": "Impuesto Selectivo al Consumo",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "otros_impuestos",
+   "fieldtype": "Link",
+   "label": "Otros Impuesto/Tasas",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "propina_legal",
+   "fieldtype": "Link",
+   "label": "Propina Legal",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "isr",
+   "fieldtype": "Link",
+   "label": "ISR",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "otras_configuraciones_tab",
+   "fieldtype": "Tab Break",
+   "label": "Otras Configuraciones"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-08-13 03:12:01.147312",
+ "modified": "2024-09-07 05:16:10.767211",
  "modified_by": "Administrator",
  "module": "Dgii Reports",
  "name": "DGII Reports Settings",
