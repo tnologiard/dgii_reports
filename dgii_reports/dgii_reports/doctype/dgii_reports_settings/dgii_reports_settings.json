@@ -14,8 +14,13 @@
   "otros_impuestos",
   "propina_legal",
   "retenciones_column",
-  "itbis_retenido",
-  "isr",
+  "ret606_itbis_retenido",
+  "ret606_isr",
+  "cuentas_607_tab",
+  "impuestos_607_column",
+  "itbis_facturado_607",
+  "retenciones_607_column",
+  "ret_607_itbis_retenido_por_terceros",
   "otras_configuraciones_tab",
   "no_validar_ncf",
   "legal_tip_account",
@@ -95,13 +100,6 @@
    "label": "Impuestos"
   },
   {
-   "fieldname": "itbis_retenido",
-   "fieldtype": "Link",
-   "label": "ITBIS Retenido",
-   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
-   "options": "Account"
-  },
-  {
    "fieldname": "retenciones_column",
    "fieldtype": "Column Break",
    "label": "Retenciones"
@@ -142,22 +140,57 @@
    "options": "Account"
   },
   {
-   "fieldname": "isr",
+   "fieldname": "otras_configuraciones_tab",
+   "fieldtype": "Tab Break",
+   "label": "Otras Configuraciones"
+  },
+  {
+   "fieldname": "cuentas_607_tab",
+   "fieldtype": "Tab Break",
+   "label": "Cuentas 607"
+  },
+  {
+   "fieldname": "itbis_facturado_607",
+   "fieldtype": "Link",
+   "label": "ITBIS Facturado",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "impuestos_607_column",
+   "fieldtype": "Column Break",
+   "label": "Impuestos"
+  },
+  {
+   "fieldname": "retenciones_607_column",
+   "fieldtype": "Column Break",
+   "label": "Retenciones"
+  },
+  {
+   "fieldname": "ret606_itbis_retenido",
+   "fieldtype": "Link",
+   "label": "ITBIS Retenido",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "ret606_isr",
    "fieldtype": "Link",
    "label": "ISR",
    "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
    "options": "Account"
   },
   {
-   "fieldname": "otras_configuraciones_tab",
-   "fieldtype": "Tab Break",
-   "label": "Otras Configuraciones"
+   "fieldname": "ret_607_itbis_retenido_por_terceros",
+   "fieldtype": "Link",
+   "label": "ITBIS Retenido por terceros",
+   "options": "Account"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-09-07 05:16:10.767211",
+ "modified": "2024-09-08 04:32:57.339301",
  "modified_by": "Administrator",
  "module": "Dgii Reports",
  "name": "DGII Reports Settings",

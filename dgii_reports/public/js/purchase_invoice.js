@@ -1,22 +1,90 @@
 frappe.ui.form.on("Purchase Invoice", {
     onload: function(frm) {
-        // Recuperar el valor de isr del Doctype DGII Reports Settings
-        frappe.db.get_single_value('DGII Reports Settings', 'isr')
-            .then(value => {
-                console.log("ISR value:", value);
-                frm.doc.isr = value;
-                check_retention_type_visibility(frm);
-            });
+        // Obtener el documento DGII Reports Settings
+        frappe.db.get_single_value('DGII Reports Settings', 'ret606_isr').then(value => {
+            frm.isr_account = value;
+        });
+
+        frappe.call({
+            method: 'frappe.client.get',
+            args: {
+                doctype: 'DGII Reports Settings',
+                name: 'DGII Reports Settings'
+            },
+            callback: function(r) {
+                if (r.message) {
+                    const doc = r.message;
+                    // Acceder a los valores de los campos con el prefijo 'ret606_'
+                    const retention_link_values = Object.keys(doc)
+                        .filter(key => key.startsWith('ret606_') && doc[key])
+                        .map(key => doc[key]);
+
+                        frm.retention_link_values = retention_link_values;
+                    check_retention_type_visibility(frm);
+                }
+            },
+            error: function(error) {
+                console.error('Error al recuperar el documento DGII Reports Settings:', error);
+            }
+        });
+
+        // Verificar el estado inicial de los checkboxes
+        handle_checkbox_state(frm);
+
+        // Limpiar campos bill_no y tax_category si es una nota de débito y está en estado "Nuevo"
+        if (frm.doc.is_return && frm.doc.docstatus == 0) {
+            frm.set_value('bill_no', '');
+            frm.set_value('tax_category', '');
+        }
     },
     refresh: function(frm) {
-        check_retention_type_visibility(frm);
+        // Verificar si los elementos necesarios existen antes de llamar a las funciones
+        if (frm.retention_link_values && frm.isr_account) {
+            check_retention_type_visibility(frm);
+        }
+        if (frm.isr_account) {
+            handle_checkbox_state(frm);
+        }
     },
     // Se ejecuta cuando se valida el formulario antes de guardar
     validate(frm) {
         // Llama a las funciones de validación y ajuste de campos específicos
-        frm.trigger("bill_no");
-        frm.trigger("validate_cost_center");
-        frm.trigger("validate_ncf");
+        if (!frm.doc.custom_is_b13 || !frm.doc.custom_is_b11 == 1) {
+            frm.trigger("bill_no");
+            frm.trigger("validate_cost_center");
+            frm.trigger("validate_ncf");
+            }
+            if (!frm.doc.tax_id) {
+                if (frm.doc.custom_is_b13) {
+                    // Obtener el tax_id de la compañía y asignarlo al documento
+                    frappe.db.get_value("Company", frm.doc.company, "tax_id", (r) => {
+                        if (r && r.tax_id) {
+                            frm.set_value("tax_id", r.tax_id);
+                        }
+                    });
+                } else {
+                    // Solicitar el RNC / Cédula del proveedor
+                    frappe.prompt(
+                        [
+                            {
+                                'fieldname': 'tax_id',
+                                'fieldtype': 'Data',
+                                'label': 'RNC / Cédula del proveedor',
+                                'reqd': 1
+                            }
+                        ],
+                        function(values){
+                            // Actualizar el proveedor y el campo tax_id del documento
+                            frappe.db.set_value("Supplier", frm.doc.supplier, "tax_id", values.tax_id);
+                            frm.set_value("tax_id", values.tax_id);
+                        },
+                        'Favor proporcionar el RNC / Cédula del proveedor',
+                        'Actualizar'
+                    );
+                    frappe.validated = false; // Detener el flujo hasta que se proporcione el tax_id
+                }
+            }
+    
     },
 
     // Ajusta el comportamiento del campo bill_no
@@ -187,17 +255,75 @@ frappe.ui.form.on('Purchase Taxes and Charges', {
 });
 
 function check_retention_type_visibility(frm) {
-    console.log("Checking retention type visibility");
     let show_retention_type = false;
-    const isr = frm.doc.isr;
-
     frm.doc.taxes.forEach(function(tax) {
-        console.log("Tax account head:", tax.account_head);
-        if (tax.account_head === isr) {
-            show_retention_type = true;
-        }
+        frm.retention_link_values.forEach(value => {
+            if (tax.account_head === value) {
+                frappe.model.set_value(tax.doctype, tax.name, 'is_tax_withholding_account', 1);
+                frappe.model.set_value(tax.doctype, tax.name, 'add_deduct_tax', "Deduct");
+                if(tax.account_head == frm.isr_account) {
+                    show_retention_type = true;
+                }
+            }
+        });
     });
 
     frm.toggle_display('retention_type', show_retention_type);
     frm.toggle_reqd('retention_type', show_retention_type);
+}
+
+function handle_checkbox_state(frm) {
+    // Verificar la existencia de los elementos antes de agregar eventos
+    if (frm.fields_dict.is_return && frm.fields_dict.is_return.$input) {
+        frm.fields_dict.is_return.$input.on('change', function() {
+            if (frm.get_field('is_return').get_value()) {
+                frm.set_value('custom_is_b11', 0);
+                frm.set_value('custom_is_b13', 0);
+                frm.toggle_enable('custom_is_b11', false);
+                frm.toggle_enable('custom_is_b13', false);
+            } else {
+                frm.toggle_enable('custom_is_b11', true);
+                frm.toggle_enable('custom_is_b13', true);
+            }
+            update_bill_no_label(frm);
+        });
+    }
+
+    if (frm.fields_dict.custom_is_b11 && frm.fields_dict.custom_is_b11.$input) {
+        frm.fields_dict.custom_is_b11.$input.on('change', function() {
+            if (frm.get_field('custom_is_b11').get_value()) {
+                frm.set_value('is_return', 0);
+                frm.set_value('custom_is_b13', 0);
+                frm.toggle_enable('is_return', false);
+                frm.toggle_enable('custom_is_b13', false);
+            } else {
+                frm.toggle_enable('is_return', true);
+                frm.toggle_enable('custom_is_b13', true);
+            }
+            update_bill_no_label(frm);
+        });
+    }
+
+    if (frm.fields_dict.custom_is_b13 && frm.fields_dict.custom_is_b13.$input) {
+        frm.fields_dict.custom_is_b13.$input.on('change', function() {
+            if (frm.get_field('custom_is_b13').get_value()) {
+                frm.set_value('is_return', 0);
+                frm.set_value('custom_is_b11', 0);
+                frm.toggle_enable('is_return', false);
+                frm.toggle_enable('custom_is_b11', false);
+            } else {
+                frm.toggle_enable('is_return', true);
+                frm.toggle_enable('custom_is_b11', true);
+            }
+            update_bill_no_label(frm);
+        });
+    }
+
+    function update_bill_no_label(frm) {
+        if (frm.get_field('custom_is_b11').get_value() || frm.get_field('custom_is_b13').get_value()) {
+            frm.set_df_property('bill_no', 'label', 'NCF');
+        } else {
+            frm.set_df_property('bill_no', 'label', 'NCF Suplidor');
+        }
+    }
 }

@@ -379,13 +379,13 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
     # Recuperar los valores de los campos del Doctype DGII Reports Settings
     settings = frappe.get_single("DGII Reports Settings")
     itbis_facturado = settings.itbis_facturado or ''
-    itbis_retenido = settings.itbis_retenido or ''
+    itbis_retenido = settings.ret606_itbis_retenido or ''
     itbis_proporcionalidad = settings.itbis_proporcionalidad or ''
     itbis_costo = settings.itbis_costo or ''
     isc = settings.isc or ''
     otros_impuestos = settings.otros_impuestos or ''
     propina_legal = settings.propina_legal or ''
-    isr = settings.isr or ''
+    isr = settings.ret606_isr or ''
 
     # Consulta SQL para obtener los datos necesarios
     facturas = frappe.db.sql(f"""
@@ -451,8 +451,105 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
         WHERE pinv.docstatus = 1
         AND pinv.bill_date BETWEEN %s AND %s
         GROUP BY pinv.name
-        ORDER BY pinv.bill_date, pinv.name
-    """, (from_date, to_date), as_dict=True)
+
+        UNION
+
+        SELECT
+            pinv.tax_id AS `RNC o Cedula`,
+            CASE
+                WHEN LENGTH(pinv.tax_id) = 9 THEN '1'
+                WHEN LENGTH(pinv.tax_id) = 11 THEN '2'
+                ELSE '3'
+            END AS `Tipo Id`,
+            pinv.tipo_bienes_y_servicios_comprados AS `Tipo Bienes y Servicios Comprados`,
+            pinv.bill_no AS `NCF`,
+            '' AS `NCF o Documento Modificado`,  # No disponible
+            pinv.bill_date AS `Fecha Comprobante`,
+            pe.reference_date AS `Fecha Pago`,
+            pinv.monto_facturado_servicios AS `Monto Facturado en Servicios`,
+            pinv.monto_facturado_bienes AS `Monto Facturado en Bienes`,
+            pinv.base_total AS `Total Monto Facturado`,
+            (SELECT SUM(CASE
+                WHEN ptc2.account_head = '{itbis_facturado}' THEN ptc2.tax_amount
+                ELSE 0
+            END)
+            FROM `tabPurchase Taxes and Charges` ptc2
+            WHERE ptc2.parent = pinv.name) AS `ITBIS Facturado`,
+            (SELECT SUM(CASE
+                WHEN ptc2.account_head = '{itbis_retenido}' THEN ptc2.tax_amount
+                ELSE 0
+            END)
+            FROM `tabPurchase Taxes and Charges` ptc2
+            WHERE ptc2.parent = pinv.name) AS `ITBIS Retenido`,
+            (SELECT SUM(CASE
+                WHEN ptc2.account_head = '{itbis_proporcionalidad}' THEN ptc2.tax_amount
+                ELSE 0
+            END)
+            FROM `tabPurchase Taxes and Charges` ptc2
+            WHERE ptc2.parent = pinv.name) AS `ITBIS sujeto a Proporcionalidad (Art. 349)`,
+            (SELECT SUM(CASE
+                WHEN ptc2.account_head = '{itbis_costo}' THEN ptc2.tax_amount
+                ELSE 0
+            END)
+            FROM `tabPurchase Taxes and Charges` ptc2
+            WHERE ptc2.parent = pinv.name) AS `ITBIS llevado al Costo`,
+            '' AS `ITBIS por Adelantar`,  # No disponible
+            '' AS `ITBIS percibido en compras`,  # No disponible
+            pinv.retention_type AS `Tipo de Retencion en ISR`,
+            (SELECT SUM(CASE
+                WHEN ptc2.account_head = '{isr}' THEN ptc2.tax_amount
+                ELSE 0
+            END)
+            FROM `tabPurchase Taxes and Charges` ptc2
+            WHERE ptc2.parent = pinv.name) AS `Monto Retención Renta`,
+            '' AS `ISR Percibido en compras`,  # No disponible
+            (SELECT SUM(CASE
+                WHEN ptc2.account_head = '{isc}' THEN ptc2.tax_amount
+                ELSE 0
+            END)
+            FROM `tabPurchase Taxes and Charges` ptc2
+            WHERE ptc2.parent = pinv.name) AS `Impuesto Selectivo al Consumo`,
+            (SELECT SUM(CASE
+                WHEN ptc2.account_head = '{otros_impuestos}' THEN ptc2.tax_amount
+                ELSE 0
+            END)
+            FROM `tabPurchase Taxes and Charges` ptc2
+            WHERE ptc2.parent = pinv.name) AS `Otros Impuesto/Tasas`,
+            (SELECT SUM(CASE
+                WHEN ptc2.account_head = '{propina_legal}' THEN ptc2.tax_amount
+                ELSE 0
+            END)
+            FROM `tabPurchase Taxes and Charges` ptc2
+            WHERE ptc2.parent = pinv.name) AS `Monto Propina Legal`,
+            pinv.is_return AS `Es Nota de Débito`,
+            pinv.return_against AS `Factura Original`,
+            pinv.name AS `Factura Actual`
+        FROM `tabPurchase Invoice` pinv
+        LEFT JOIN `tabSupplier` supl ON supl.name = pinv.supplier
+        LEFT JOIN `tabPayment Entry Reference` per ON per.reference_name = pinv.name
+        LEFT JOIN `tabPayment Entry` pe ON pe.name = per.parent
+        WHERE pinv.docstatus = 1
+        AND pe.reference_date BETWEEN %s AND %s
+        AND pinv.bill_date < %s
+        AND pinv.outstanding_amount = 0
+        AND (
+            (SELECT SUM(CASE
+                WHEN ptc2.account_head = '{itbis_retenido}' THEN ptc2.tax_amount
+                ELSE 0
+            END)
+            FROM `tabPurchase Taxes and Charges` ptc2
+            WHERE ptc2.parent = pinv.name) > 0
+            OR
+            (SELECT SUM(CASE
+                WHEN ptc2.account_head = '{isr}' THEN ptc2.tax_amount
+                ELSE 0
+            END)
+            FROM `tabPurchase Taxes and Charges` ptc2
+            WHERE ptc2.parent = pinv.name) > 0
+        )
+        GROUP BY pinv.name
+        ORDER BY `Fecha Comprobante`, `Factura Actual`
+    """, (from_date, to_date, from_date, to_date, from_date), as_dict=True)
     # Calcular el número de registros
     numero_registros = len(facturas)
 
