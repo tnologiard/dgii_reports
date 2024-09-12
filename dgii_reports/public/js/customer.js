@@ -19,10 +19,15 @@ frappe.ui.form.on("Customer", {
         ]);
     },
     add_consult_rnc_button(frm) {
-        if (!frm.is_new()) return;
-        frm.add_custom_button(__('Consultar RNC'), () => {
-            frm.trigger("get_rnc_details");
-        }).addClass("btn-primary");
+        frappe.db.get_single_value('DGII Reports Settings', 'no_validar_ncf').then(no_validar_ncf => {
+            if (no_validar_ncf) {
+                return true;
+            }
+            if (!frm.is_new()) return;
+            frm.add_custom_button(__('Consultar RNC'), () => {
+                frm.trigger("get_rnc_details");
+            }).addClass("btn-primary");
+        });
     },
     get_rnc_details(frm) {
         const method = "dgii_reports.api.get_rnc_details"
