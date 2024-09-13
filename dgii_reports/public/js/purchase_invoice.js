@@ -186,60 +186,6 @@ frappe.ui.form.on("Purchase Invoice", {
         frm.trigger("validate_rnc");
     },
 
-    // Ajusta la interfaz cuando se incluye la retención de ISR
-    include_isr(frm) {
-        frm.trigger("calculate_isr");  // Calcula el monto de ISR
-
-        // Establece ciertos campos como obligatorios si include_isr está marcado
-        $.map(["retention_rate", "retention_type"], field => {
-            frm.set_df_property(field, 'reqd', frm.doc.include_isr);
-        });
-    },
-
-    // Recalcula el ISR cuando cambia la tasa de ISR
-    isr_rate(frm) {
-        frm.trigger("calculate_isr");  // Calcula el monto de ISR basado en la nueva tasa
-    },
-
-    // Ajusta la interfaz cuando se incluye la retención
-    include_retention(frm) {
-        // Establece el campo retention_rate como obligatorio si include_retention está marcado
-        frm.set_df_property("retention_rate", 'reqd', frm.doc.include_retention);
-        frm.trigger("calculate_retention");  // Calcula el monto de retención
-    },
-
-    // Recalcula la retención cuando cambia la tasa de retención
-    retention_rate(frm) {
-        frm.trigger("calculate_retention");  // Calcula el monto de retención basado en la nueva tasa
-    },
-
-    // Calcula el monto de la retención basado en la tasa seleccionada
-    calculate_retention(frm) {
-        // Si no se incluye la retención, o si faltan otros valores clave, establece el monto en 0
-        if (!frm.doc.include_retention || !frm.doc.total_taxes_and_charges || !frm.doc.retention_rate)
-            frm.set_value("retention_amount", 0);
-
-        let retention_rate = 0;
-        if (frm.doc.retention_rate == '30%')
-            retention_rate = 0.30;  // Tasa del 30%
-
-        if (frm.doc.retention_rate == '100%')
-            retention_rate = 1;  // Tasa del 100%
-        
-        // Calcula el monto de retención y lo asigna al campo retention_amount
-        frm.set_value("retention_amount", frm.doc.total_taxes_and_charges * retention_rate);		
-    },
-
-    // Calcula el monto de ISR basado en la tasa y el total
-    calculate_isr(frm) {
-        // Si no se incluye ISR, o si faltan otros valores clave, establece el monto en 0
-        if (!frm.doc.include_isr || !frm.doc.total || !frm.doc.isr_rate)
-            frm.set_value("isr_amount", 0);
-        
-        // Calcula el monto de ISR y lo asigna al campo isr_amount
-        let amount = frm.doc.total * (frm.doc.isr_rate / 100);
-        frm.set_value("isr_amount", amount);
-    }
 });
 
 frappe.ui.form.on('Purchase Taxes and Charges', {
@@ -322,8 +268,16 @@ function handle_checkbox_state(frm) {
     function update_bill_no_label(frm) {
         if (frm.get_field('custom_is_b11').get_value() || frm.get_field('custom_is_b13').get_value()) {
             frm.set_df_property('bill_no', 'label', 'NCF');
+            frm.set_df_property('bill_date', 'label', 'Fecha de Comprobante');
+            frm.set_value('bill_date', frm.doc.posting_date); 
+            frm.set_df_property('vencimiento_ncf', 'reqd', 0);
+            // frm.set_df_property('bill_no', 'read_only', 1); 
         } else {
             frm.set_df_property('bill_no', 'label', 'NCF Suplidor');
+            frm.set_df_property('bill_date', 'label', 'Fecha de Factura del Suplidor');
+            frm.set_value('bill_date', ''); 
+            frm.set_df_property('vencimiento_ncf', 'reqd', 1); 
+            // frm.set_df_property('bill_no', 'read_only', 0); 
         }
     }
 }

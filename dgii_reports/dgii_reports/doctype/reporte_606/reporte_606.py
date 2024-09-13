@@ -351,19 +351,22 @@ from openpyxl.styles import Alignment, PatternFill, Font, Border, Side, NamedSty
 
 def get_payment_method_id(invoice_name):
     payment_entries = frappe.db.sql("""
-        SELECT DISTINCT pe.mode_of_payment
+        SELECT DISTINCT pe.mode_of_payment, pinv.outstanding_amount
         FROM `tabPayment Entry Reference` per
         JOIN `tabPayment Entry` pe ON per.parent = pe.name
+        JOIN `tabPurchase Invoice` pinv ON per.reference_name = pinv.name
         WHERE per.reference_name = %s
     """, (invoice_name,), as_dict=True)
-        
+    
+    # Filtrar las entradas de pago con outstanding_amount == 0
+    payment_entries = [entry for entry in payment_entries if entry.outstanding_amount == 0]
+    
     if len(payment_entries) > 1:
         return '07 - MIXTA'  # Mixta
     elif len(payment_entries) == 1:
         forma_de_pago = payment_entries[0].mode_of_payment
         return forma_de_pago
-    return '04 - CREDITO'
-
+    return '04 - COMPRA A CREDITO'
 
 @frappe.whitelist()
 def get_excel_file_address(from_date, to_date, decimal_places=2):
@@ -378,14 +381,14 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
 
     # Recuperar los valores de los campos del Doctype DGII Reports Settings
     settings = frappe.get_single("DGII Reports Settings")
-    itbis_facturado = settings.itbis_facturado or ''
-    itbis_retenido = settings.ret606_itbis_retenido or ''
-    itbis_proporcionalidad = settings.itbis_proporcionalidad or ''
-    itbis_costo = settings.itbis_costo or ''
-    isc = settings.isc or ''
-    otros_impuestos = settings.otros_impuestos or ''
-    propina_legal = settings.propina_legal or ''
-    isr = settings.ret606_isr or ''
+    itbis_facturado = frappe.db.escape(settings.itbis_facturado or '')
+    itbis_retenido = frappe.db.escape(settings.ret606_itbis_retenido or '')
+    itbis_proporcionalidad = frappe.db.escape(settings.itbis_proporcionalidad or '')
+    itbis_costo = frappe.db.escape(settings.itbis_costo or '')
+    isc = frappe.db.escape(settings.isc or '')
+    otros_impuestos = frappe.db.escape(settings.otros_impuestos or '')
+    propina_legal = frappe.db.escape(settings.propina_legal or '')
+    isr = frappe.db.escape(settings.ret606_isr or '')
 
     # Consulta SQL para obtener los datos necesarios
     facturas = frappe.db.sql(f"""
@@ -405,39 +408,39 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             pinv.monto_facturado_bienes AS `Monto Facturado en Bienes`,
             pinv.base_total AS `Total Monto Facturado`,
             SUM(CASE
-                WHEN ptc.account_head = '{itbis_facturado}' THEN ptc.tax_amount
+                WHEN ptc.account_head = {itbis_facturado} THEN ptc.tax_amount
                 ELSE 0
             END) AS `ITBIS Facturado`,
             SUM(CASE
-                WHEN ptc.account_head = '{itbis_retenido}' THEN ptc.tax_amount
+                WHEN ptc.account_head = {itbis_retenido} THEN ptc.tax_amount
                 ELSE 0
             END) AS `ITBIS Retenido`,
             SUM(CASE
-                WHEN ptc.account_head = '{itbis_proporcionalidad}' THEN ptc.tax_amount
+                WHEN ptc.account_head = {itbis_proporcionalidad} THEN ptc.tax_amount
                 ELSE 0
             END) AS `ITBIS sujeto a Proporcionalidad (Art. 349)`,
             SUM(CASE
-                WHEN ptc.account_head = '{itbis_costo}' THEN ptc.tax_amount
+                WHEN ptc.account_head = {itbis_costo} THEN ptc.tax_amount
                 ELSE 0
             END) AS `ITBIS llevado al Costo`,
             '' AS `ITBIS por Adelantar`,  # No disponible
             '' AS `ITBIS percibido en compras`,  # No disponible
             pinv.retention_type AS `Tipo de Retencion en ISR`,
             SUM(CASE
-                WHEN ptc.account_head = '{isr}' THEN ptc.tax_amount
+                WHEN ptc.account_head = {isr} THEN ptc.tax_amount
                 ELSE 0
             END) AS `Monto Retención Renta`,
             '' AS `ISR Percibido en compras`,  # No disponible
             SUM(CASE
-                WHEN ptc.account_head = '{isc}' THEN ptc.tax_amount
+                WHEN ptc.account_head = {isc} THEN ptc.tax_amount
                 ELSE 0
             END) AS `Impuesto Selectivo al Consumo`,
             SUM(CASE
-                WHEN ptc.account_head = '{otros_impuestos}' THEN ptc.tax_amount
+                WHEN ptc.account_head = {otros_impuestos} THEN ptc.tax_amount
                 ELSE 0
             END) AS `Otros Impuesto/Tasas`,
             SUM(CASE
-                WHEN ptc.account_head = '{propina_legal}' THEN ptc.tax_amount
+                WHEN ptc.account_head = {propina_legal} THEN ptc.tax_amount
                 ELSE 0
             END) AS `Monto Propina Legal`,
             pinv.is_return AS `Es Nota de Débito`,
@@ -470,25 +473,25 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             pinv.monto_facturado_bienes AS `Monto Facturado en Bienes`,
             pinv.base_total AS `Total Monto Facturado`,
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = '{itbis_facturado}' THEN ptc2.tax_amount
+                WHEN ptc2.account_head = {itbis_facturado} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
             WHERE ptc2.parent = pinv.name) AS `ITBIS Facturado`,
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = '{itbis_retenido}' THEN ptc2.tax_amount
+                WHEN ptc2.account_head = {itbis_retenido} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
             WHERE ptc2.parent = pinv.name) AS `ITBIS Retenido`,
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = '{itbis_proporcionalidad}' THEN ptc2.tax_amount
+                WHEN ptc2.account_head = {itbis_proporcionalidad} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
             WHERE ptc2.parent = pinv.name) AS `ITBIS sujeto a Proporcionalidad (Art. 349)`,
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = '{itbis_costo}' THEN ptc2.tax_amount
+                WHEN ptc2.account_head = {itbis_costo} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
@@ -497,26 +500,26 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             '' AS `ITBIS percibido en compras`,  # No disponible
             pinv.retention_type AS `Tipo de Retencion en ISR`,
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = '{isr}' THEN ptc2.tax_amount
+                WHEN ptc2.account_head = {isr} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
             WHERE ptc2.parent = pinv.name) AS `Monto Retención Renta`,
             '' AS `ISR Percibido en compras`,  # No disponible
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = '{isc}' THEN ptc2.tax_amount
+                WHEN ptc2.account_head = {isc} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
             WHERE ptc2.parent = pinv.name) AS `Impuesto Selectivo al Consumo`,
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = '{otros_impuestos}' THEN ptc2.tax_amount
+                WHEN ptc2.account_head = {otros_impuestos} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
             WHERE ptc2.parent = pinv.name) AS `Otros Impuesto/Tasas`,
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = '{propina_legal}' THEN ptc2.tax_amount
+                WHEN ptc2.account_head = {propina_legal} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
@@ -534,14 +537,14 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
         AND pinv.outstanding_amount = 0
         AND (
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = '{itbis_retenido}' THEN ptc2.tax_amount
+                WHEN ptc2.account_head = {itbis_retenido} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
             WHERE ptc2.parent = pinv.name) > 0
             OR
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = '{isr}' THEN ptc2.tax_amount
+                WHEN ptc2.account_head = {isr} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
@@ -550,6 +553,7 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
         GROUP BY pinv.name
         ORDER BY `Fecha Comprobante`, `Factura Actual`
     """, (from_date, to_date, from_date, to_date, from_date), as_dict=True)
+
     # Calcular el número de registros
     numero_registros = len(facturas)
 

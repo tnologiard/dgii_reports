@@ -3,33 +3,37 @@ from frappe import _
 from frappe.utils import cint, getdate, nowdate
 from dgii_reports.servicios.consultas_web_dgii import ServicioConsultasWebDgii
 
+def common_validations(doc):
+    """Función que realiza las validaciones comunes."""
+    validate_tax_id(doc)
+    validate_duplicate_ncf(doc)
+
 def validate(doc, event):
     """Función para validar el documento antes de cualquier acción."""
-    validate_duplicate_ncf(doc)
+    common_validations(doc)
 
 def before_save(doc, event):
     """Función que se ejecuta antes de guardar el documento."""
-    validate_tax_id(doc)
-    validate_duplicate_ncf(doc)
-    validate_tax_category(doc)
+    common_validations(doc)
+    if doc.custom_is_b11 or doc.custom_is_b13:
+        generate_new(doc)
+        print(f"before_save: Se ha generado un nuevo NCF = {doc.bill_no}")
+    else:
+        validate_tax_category(doc)
+        validate_unique_ncf_by_supplier(doc)
+        print(f"before_save: doc.bill_no (after) = {doc.bill_no}")
+        validate_against_dgii(doc)
 
 def before_submit(doc, event):
     """Función que se ejecuta antes de enviar el documento."""
-    validate_tax_id(doc)
+    common_validations(doc)
     if doc.custom_is_b11 or doc.custom_is_b13:
         generate_new(doc)
         print(f"before_submit: Se ha generado un nuevo NCF = {doc.bill_no}")
     else:
         validate_tax_category(doc)
-
-        # Verificar y generar un NCF único
-        if not doc.bill_no:
-            generate_new(doc)
-            print(f"before_submit: Se ha generado un nuevo NCF = {doc.bill_no}")
-        validate_unique_ncf_by_supplier(doc.supplier, doc.bill_no)
-
+        validate_unique_ncf_by_supplier(doc)
         print(f"before_submit: doc.bill_no (after) = {doc.bill_no}")
-
         validate_against_dgii(doc)
 
 def generate_new(doc):
@@ -113,6 +117,12 @@ def validate_duplicate_ncf(doc):
     if doc.is_return and not doc.bill_no.startswith("B04"):
         frappe.throw("El NCF de una nota de crédito del suplidor debe tener el prefijo 'B04'.")
 
+    if doc.custom_is_b11 and not doc.bill_no.startswith("B11"):
+        frappe.throw("El NCF de un Comprobante de Compras, debe tener el prefijo 'B11'.")
+
+    if doc.custom_is_b13 and not doc.bill_no.startswith("B13"):
+        frappe.throw("El NCF de un Comprobante para Gastos Menores, debe tener el prefijo 'B13'.")
+
     filters = {
         "tax_id": doc.tax_id, # rnc
         "bill_no": doc.bill_no, # ncf
@@ -139,11 +149,15 @@ def validate_tax_id(doc):
             # Detener el flujo y lanzar una excepción
             frappe.throw("El campo RNC / Cédula del proveedor es obligatorio. Favor proporcionar el RNC / Cédula del proveedor.")
 
-def validate_unique_ncf_by_supplier(supplier, ncf):
+# def validate_unique_ncf_by_supplier(supplier, ncf):
+def validate_unique_ncf_by_supplier(doc):
     """Valida que el NCF sea único por suplidor."""
+    if not doc.bill_no:
+        frappe.throw("El número de comprobante fiscal es obligatorio.++")
+
     filters = {
-        "bill_no": ncf,
-        # "supplier": supplier,
+        "bill_no": doc.bill_no,
+        "supplier": doc.supplier,
         "docstatus": 1
     }
     purchase_invoice = frappe.db.exists("Purchase Invoice", filters)
@@ -172,18 +186,9 @@ def validate_against_dgii(doc):
     if not doc.tax_id:
         return
 
-    if not doc.bill_no:
-        frappe.throw("El número de comprobante fiscal es obligatorio.")
-
-    # Verificar si es una nota de débito y que el NCF del suplidor tenga el prefijo B04
-    if doc.is_return and not doc.bill_no.startswith("B04"):
-        frappe.throw("El NCF de una nota de crédito del suplidor, debe tener el prefijo 'B04'.")
-
     my_tax_id = frappe.get_value("Company", doc.company, "tax_id")
     if not my_tax_id:
         frappe.throw("Favor ingresar el RNC en la compañía (sin guiones).")
-
-    # validate_unique_ncf_by_supplier(doc.supplier, doc.bill_no)
 
     if not validate_ncf_with_dgii(doc.tax_id, doc.bill_no, my_rnc=my_tax_id, sec_code=doc.custom_security_code, req_sec_code=doc.custom_require_security_code):
         print(f"doc.tax_id: {doc.tax_id}, doc.bill_no: {doc.bill_no}, my_rnc: {my_tax_id}, sec_code: {doc.custom_security_code}, req_sec_code: {doc.custom_require_security_code}")
