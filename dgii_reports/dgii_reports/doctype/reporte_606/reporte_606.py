@@ -17,6 +17,7 @@ class Reporte606(Document):
 
 @frappe.whitelist()
 def validate_pending_invoices(from_date, to_date):
+    # Consulta para contar facturas en borrador
     draft_invoices = frappe.db.sql("""
         SELECT 
             COUNT(*) 
@@ -29,6 +30,19 @@ def validate_pending_invoices(from_date, to_date):
     if draft_invoices[0][0] > 0:
         frappe.log_error("Facturas pendientes encontradas", "validate_pending_invoices")
         return {"message": "Hay facturas de compra pendientes de procesar. Por favor, complete las facturas pendientes antes de generar el reporte."}
+    
+    pending_invoices = frappe.db.sql("""
+        SELECT 
+            COUNT(*) 
+        FROM 
+            `tabPurchase Invoice` 
+        WHERE 
+            docstatus = 1 AND outstanding_amount > 0 AND posting_date BETWEEN '%s' AND '%s' AND (bill_no LIKE 'B13%%' OR bill_no LIKE 'B11%%')
+    """ % (from_date, to_date))
+
+    if pending_invoices[0][0] > 0:
+        frappe.log_error("Comprobantes de gastos menores o compras no pagadas encontradas", "validate_pending_invoices")
+        return {"message": "Hay comprobantes de gastos menores (B13) o comprobantes de compras (B11) no pagados. Por favor, complete el pago de estas facturas antes de generar el reporte."}
     
     frappe.log_error("No hay facturas pendientes", "validate_pending_invoices")
     return {"message": ""}
@@ -469,8 +483,14 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             '' AS `NCF o Documento Modificado`,  # No disponible
             pinv.bill_date AS `Fecha Comprobante`,
             pe.reference_date AS `Fecha Pago`,
-            pinv.monto_facturado_servicios AS `Monto Facturado en Servicios`,
-            pinv.monto_facturado_bienes AS `Monto Facturado en Bienes`,
+            (SELECT COALESCE(SUM(pii.amount), 0)
+            FROM `tabPurchase Invoice Item` pii
+            JOIN `tabItem` item ON pii.item_code = item.item_code
+            WHERE pii.parent = pinv.name AND item.item_type = 'Servicios') AS `Monto Facturado en Servicios`,
+            (SELECT COALESCE(SUM(pii.amount), 0)
+            FROM `tabPurchase Invoice Item` pii
+            JOIN `tabItem` item ON pii.item_code = item.item_code
+            WHERE pii.parent = pinv.name AND item.item_type = 'Bienes') AS `Monto Facturado en Bienes`,
             pinv.base_total AS `Total Monto Facturado`,
             (SELECT SUM(CASE
                 WHEN ptc2.account_head = {itbis_facturado} THEN ptc2.tax_amount

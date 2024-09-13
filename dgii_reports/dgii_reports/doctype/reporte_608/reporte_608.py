@@ -58,20 +58,29 @@ def get_file_address(from_date, to_date, decimal_places=2):
 
     # Consulta SQL para obtener los datos necesarios
     query = """
-    SELECT 
-        sinv.custom_ncf as ncf, 
-        sinv.posting_date as fecha_comprobante,
-        sinv.custom_codigo_de_anulacion  as tipo_anulacion  -- Recuperar la columna codigo de la tabla tabTipo de Anulacion
-    FROM 
-        `tabSales Invoice` AS sinv 
-    WHERE 
-        sinv.docstatus = 2 AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
+        SELECT 
+            sinv.custom_ncf as ncf, 
+            sinv.posting_date as fecha_comprobante,
+            sinv.custom_codigo_de_anulacion as tipo_anulacion  -- Recuperar la columna codigo de la tabla tabTipo de Anulacion
+        FROM 
+            `tabSales Invoice` AS sinv 
+        WHERE 
+            sinv.docstatus = 2 AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
+
+        UNION
+
+        SELECT 
+            pinv.bill_no as ncf, 
+            pinv.posting_date as fecha_comprobante,
+            pinv.custom_codigo_de_anulacion as tipo_anulacion  -- Recuperar la columna codigo de la tabla tabTipo de Anulacion
+        FROM 
+            `tabPurchase Invoice` AS pinv 
+        WHERE 
+            pinv.docstatus = 2 AND pinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
+            AND (pinv.bill_no LIKE 'B13%%' OR pinv.bill_no LIKE 'B11%%')
     """
-
     # Ejecutar la consulta
-    result = frappe.db.sql(query, {"from_date": from_date, "to_date": to_date}, as_dict=True)
-
-    # Número de registros
+    result = frappe.db.sql(query, {"from_date": from_date, "to_date": to_date}, as_dict=True)    # Número de registros
     numero_registros = len(result)
 
     # Crear el archivo en memoria usando UnicodeWriter
