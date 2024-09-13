@@ -418,8 +418,14 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             '' AS `NCF o Documento Modificado`,  # No disponible
             pinv.bill_date AS `Fecha Comprobante`,
             pe.reference_date AS `Fecha Pago`,
-            pinv.monto_facturado_servicios AS `Monto Facturado en Servicios`,
-            pinv.monto_facturado_bienes AS `Monto Facturado en Bienes`,
+            (SELECT COALESCE(SUM(pii.amount), 0)
+            FROM `tabPurchase Invoice Item` pii
+            JOIN `tabItem` item ON pii.item_code = item.item_code
+            WHERE pii.parent = pinv.name AND item.item_type = 'Servicios') AS `Monto Facturado en Servicios`,
+            (SELECT COALESCE(SUM(pii.amount), 0)
+            FROM `tabPurchase Invoice Item` pii
+            JOIN `tabItem` item ON pii.item_code = item.item_code
+            WHERE pii.parent = pinv.name AND item.item_type = 'Bienes') AS `Monto Facturado en Bienes`,
             pinv.base_total AS `Total Monto Facturado`,
             SUM(CASE
                 WHEN ptc.account_head = {itbis_facturado} THEN ptc.tax_amount
@@ -483,14 +489,8 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             '' AS `NCF o Documento Modificado`,  # No disponible
             pinv.bill_date AS `Fecha Comprobante`,
             pe.reference_date AS `Fecha Pago`,
-            (SELECT COALESCE(SUM(pii.amount), 0)
-            FROM `tabPurchase Invoice Item` pii
-            JOIN `tabItem` item ON pii.item_code = item.item_code
-            WHERE pii.parent = pinv.name AND item.item_type = 'Servicios') AS `Monto Facturado en Servicios`,
-            (SELECT COALESCE(SUM(pii.amount), 0)
-            FROM `tabPurchase Invoice Item` pii
-            JOIN `tabItem` item ON pii.item_code = item.item_code
-            WHERE pii.parent = pinv.name AND item.item_type = 'Bienes') AS `Monto Facturado en Bienes`,
+            pinv.monto_facturado_servicios AS `Monto Facturado en Servicios`,
+            pinv.monto_facturado_bienes AS `Monto Facturado en Bienes`,
             pinv.base_total AS `Total Monto Facturado`,
             (SELECT SUM(CASE
                 WHEN ptc2.account_head = {itbis_facturado} THEN ptc2.tax_amount
