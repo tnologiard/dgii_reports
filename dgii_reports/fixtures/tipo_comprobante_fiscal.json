@@ -56,22 +56,6 @@
   "tipo_comprobante": "Comprobante Fiscal Electrónico"
  },
  {
-  "codigo": "13",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:52:43.422619",
-  "name": "Comprobante para Gastos Menores-13",
-  "tipo_comprobante": "Comprobante para Gastos Menores"
- },
- {
-  "codigo": "11",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:52:02.310960",
-  "name": "Comprobante de Compras-11",
-  "tipo_comprobante": "Comprobante de Compras"
- },
- {
   "codigo": "04",
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
@@ -86,6 +70,22 @@
   "modified": "2024-08-07 03:51:22.429544",
   "name": "Notas de Débito-03",
   "tipo_comprobante": "Notas de Débito"
+ },
+ {
+  "codigo": "13",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:52:43.422619",
+  "name": "Comprobante para Gastos Menores-13",
+  "tipo_comprobante": "Comprobante para Gastos Menores"
+ },
+ {
+  "codigo": "11",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:52:02.310960",
+  "name": "Comprobante de Compras-11",
+  "tipo_comprobante": "Comprobante de Compras"
  },
  {
   "codigo": "01",

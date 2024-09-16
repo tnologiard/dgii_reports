@@ -19,8 +19,14 @@
   "cuentas_607_tab",
   "impuestos_607_column",
   "itbis_facturado_607",
+  "itbis_percibido_607",
+  "isr_percibido_607",
+  "isc_607",
+  "otros_impuestos_tasas_607",
+  "propina_legal_607",
   "retenciones_607_column",
   "ret_607_itbis_retenido_por_terceros",
+  "ret_607_retencion_renta_por_terceros",
   "otras_configuraciones_tab",
   "no_validar_ncf",
   "legal_tip_account",
@@ -184,13 +190,56 @@
    "fieldname": "ret_607_itbis_retenido_por_terceros",
    "fieldtype": "Link",
    "label": "ITBIS Retenido por terceros",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "itbis_percibido_607",
+   "fieldtype": "Link",
+   "label": "ITBIS Percibido",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "isr_percibido_607",
+   "fieldtype": "Link",
+   "label": "ISR Percibido",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "isc_607",
+   "fieldtype": "Link",
+   "label": "Impuesto Selectivo al Consumo",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "otros_impuestos_tasas_607",
+   "fieldtype": "Link",
+   "label": "Otros Impuestos/Tasas",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "propina_legal_607",
+   "fieldtype": "Link",
+   "label": "Monto Propina Legal",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
+   "options": "Account"
+  },
+  {
+   "fieldname": "ret_607_retencion_renta_por_terceros",
+   "fieldtype": "Link",
+   "label": "Retenci\u00f3n Renta por Terceros",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"]]",
    "options": "Account"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-09-08 04:32:57.339301",
+ "modified": "2024-09-15 19:51:58.592383",
  "modified_by": "Administrator",
  "module": "Dgii Reports",
  "name": "DGII Reports Settings",

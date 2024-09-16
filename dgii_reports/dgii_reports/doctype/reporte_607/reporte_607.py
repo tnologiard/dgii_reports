@@ -3,11 +3,15 @@
 
 from __future__ import unicode_literals
 import frappe
-from frappe.utils import cstr, cint, flt, formatdate, format_datetime
+from frappe.utils import flt
 from frappe.model.document import Document
 from frappe.utils.csvutils import UnicodeWriter
-import time
 from datetime import datetime
+import time
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, PatternFill, Font, Border, Side, NamedStyle
+
 
 class Reporte607(Document):
 	pass
@@ -31,8 +35,9 @@ def validate_pending_invoices(from_date, to_date):
     frappe.log_error("No hay facturas pendientes", "validate_pending_invoices")
     return {"message": ""}
 
+
 @frappe.whitelist()
-def get_file_address(from_date, to_date, decimal_places=2):
+def get_file_address_1(from_date, to_date, decimal_places=2):
     # Obtener el tax_id del doctype Company
     company = frappe.get_doc("Company", frappe.defaults.get_user_default("Company"))
     rnc = company.tax_id.replace("-", "") if company.tax_id else ""
@@ -156,4 +161,426 @@ def get_file_address(from_date, to_date, decimal_places=2):
     # Devolver el contenido del archivo de texto como descarga
     frappe.response['filename'] = "Reporte_607_%s.txt" % time.strftime("%Y%m%d_%H%M%S")
     frappe.response['filecontent'] = content
+    frappe.response['type'] = 'download'
+
+def format_amount(amount, decimal_places=2):
+    if amount == '' or amount == 0 or amount == '0.000000000':
+        return ''
+    try:
+        amount = abs(float(amount))  # Convertir a valor absoluto
+    except ValueError:
+        return amount
+    if amount == int(amount):
+        return str(int(amount))
+    else:
+        return f"{amount:.{decimal_places}f}"
+
+
+@frappe.whitelist()
+def get_file_address(from_date, to_date, decimal_places=2):
+    # Obtener el tax_id del doctype Company
+    company = frappe.get_doc("Company", frappe.defaults.get_user_default("Company"))
+    rnc = company.tax_id.replace("-", "") if company.tax_id else ""
+
+    # Calcular el periodo
+    from_date_obj = datetime.strptime(from_date, "%Y-%m-%d")
+    to_date_obj = datetime.strptime(to_date, "%Y-%m-%d")
+    periodo = f"{from_date_obj.year}{min(from_date_obj.month, to_date_obj.month):02d}"
+
+    # Recuperar los nombres de las cuentas del Doctype DGII Reports Settings
+    settings = frappe.get_single("DGII Reports Settings")
+    itbis_facturado = settings.itbis_facturado_607 or ''
+    itbis_percibido = settings.itbis_percibido_607 or ''
+    isr_percibido = settings.isr_percibido_607 or ''
+    impuesto_selectivo_al_consumo = settings.isc_607 or ''
+    otros_impuestos_tasas = settings.otros_impuestos_tasas_607 or ''   
+    propina_legal = settings.propina_legal_607 or ''
+    itbis_retenido_por_terceros = settings.ret_607_itbis_retenido_por_terceros or ''
+    retencion_renta_por_terceros = settings.ret_607_retencion_renta_por_terceros or ''
+
+    efectivo = "01 - EFECTIVO"
+    cheque_transferencia_deposito = "02 - CHEQUES/TRANSFERENCIAS/DEPÓSITO"
+    tarjeta_debito_credito = "03 - TARJETA CRÉDITO/DÉBITO"
+    permuta = "05 - PERMUTA"
+    venta_credito = "08 - VENTA CREDITO"
+    bonos_certificados_regalo = "09 - BONOS O CERTIFICADOS DE REGALO"
+    otras_formas_ventas = "10 - OTRAS FORMAS DE VENTAS"
+    # Consulta SQL para obtener los datos necesarios
+    query = f"""
+    SELECT 
+        cust.tax_id AS `RNC/Cédula o Pasaporte`, 
+        cust.custom_tipo_rnc AS `Tipo Identificación`,
+        sinv.custom_ncf AS `Número Comprobante Fiscal`, 
+        sinv.custom_return_against_ncf AS `Número Comprobante Fiscal Modificado`,
+        CONCAT(tipo_ing.codigo, ' - ', tipo_ing.tipo_de_ingreso) AS `Tipo de Ingreso`,        
+        sinv.posting_date AS `Fecha Comprobante`, 
+        sinv.due_date AS `Fecha de Retención`,
+        sinv.base_total AS `Monto Facturado`, 
+        SUM(
+            CASE 
+                WHEN ptc.account_head = '{itbis_facturado}' 
+                THEN ptc.tax_amount 
+                ELSE 0 
+            END
+        ) AS `ITBIS Facturado`,
+        SUM(
+            CASE 
+                WHEN ptc.account_head = '{itbis_retenido_por_terceros}' 
+                THEN ptc.tax_amount 
+                ELSE 0 
+            END
+        ) AS `ITBIS Retenido por Terceros`,
+        SUM(
+            CASE 
+                WHEN ptc.account_head = '{itbis_percibido}' 
+                THEN ptc.tax_amount 
+                ELSE 0 
+            END
+        ) AS `ITBIS Percibido`,
+        SUM(
+            CASE 
+                WHEN ptc.account_head = '{retencion_renta_por_terceros}' 
+                THEN ptc.tax_amount 
+                ELSE 0 
+            END
+        ) AS `Retención Renta por Terceros`,
+        SUM(
+            CASE 
+                WHEN ptc.account_head = '{isr_percibido}' 
+                THEN ptc.tax_amount 
+                ELSE 0 
+            END
+        ) AS `ISR Percibido`,
+        SUM(
+            CASE 
+                WHEN ptc.account_head = '{impuesto_selectivo_al_consumo}' 
+                THEN ptc.tax_amount 
+                ELSE 0 
+            END
+        ) AS `Impuesto Selectivo al Consumo`,
+        SUM(
+            CASE 
+                WHEN ptc.account_head = '{otros_impuestos_tasas}' 
+                THEN ptc.tax_amount 
+                ELSE 0 
+            END
+        ) AS `Otros Impuestos/Tasas`,
+        SUM(
+            CASE 
+                WHEN ptc.account_head = '{propina_legal}' 
+                THEN ptc.tax_amount 
+                ELSE 0 
+            END
+        ) AS `Monto Propina Legal`,
+        CASE 
+            WHEN COALESCE(SUM(CASE WHEN LOWER(pe.mode_of_payment) = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
+            THEN '' 
+            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) 
+        END AS `Efectivo`,
+        CASE 
+            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
+            THEN '' 
+            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) 
+        END AS `Cheque/ Transferencia/ Depósito`,
+        CASE 
+            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
+            THEN '' 
+            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) 
+        END AS `Tarjeta Débito/Crédito`,
+        CASE 
+            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
+            THEN '' 
+            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) 
+        END AS `Venta a Crédito`,
+        CASE 
+            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{bonos_certificados_regalo}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
+            THEN '' 
+            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{bonos_certificados_regalo}' THEN pe.paid_amount ELSE 0 END), 0) 
+        END AS `Bonos o Certificados de Regalo`,
+        CASE 
+            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
+            THEN '' 
+            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) 
+        END AS `Permuta`,
+        CASE 
+            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{otras_formas_ventas}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
+            THEN '' 
+            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{otras_formas_ventas}' THEN pe.paid_amount ELSE 0 END), 0) 
+        END AS `Otras Formas de Ventas`
+    FROM 
+        `tabSales Invoice` AS sinv 
+    JOIN 
+        tabCustomer AS cust ON sinv.customer = cust.name 
+    LEFT JOIN 
+        `tabPayment Entry Reference` AS per ON per.reference_name = sinv.name
+    LEFT JOIN 
+        `tabPayment Entry` AS pe ON pe.name = per.parent
+    LEFT JOIN 
+        `tabTipo de Ingreso` AS tipo_ing ON sinv.custom_tipo_de_ingreso = tipo_ing.tipo_de_ingreso
+    LEFT JOIN 
+        `tabSales Taxes and Charges` AS ptc ON sinv.name = ptc.parent
+    WHERE 
+        sinv.custom_ncf NOT LIKE 'SINV-%%' 
+        AND sinv.docstatus = 1 
+        AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
+    GROUP BY 
+        sinv.name
+
+    UNION
+
+    SELECT 
+        cust.tax_id AS `RNC/Cédula o Pasaporte`, 
+        cust.custom_tipo_rnc AS `Tipo Identificación`,
+        sinv.custom_ncf AS `Número Comprobante Fiscal`, 
+        sinv.custom_return_against_ncf AS `Número Comprobante Fiscal Modificado`,
+        CONCAT(tipo_ing.codigo, ' - ', tipo_ing.tipo_de_ingreso) AS `Tipo de Ingreso`,        
+        sinv.posting_date AS `Fecha Comprobante`, 
+        sinv.due_date AS `Fecha de Retención`,
+        sinv.base_total AS `Monto Facturado`, 
+        SUM(CASE WHEN ptc.account_head = '{itbis_facturado}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Facturado`,
+        SUM(CASE WHEN ptc.account_head = '{itbis_retenido_por_terceros}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Retenido por Terceros`,
+        SUM(CASE WHEN ptc.account_head = '{itbis_percibido}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Percibido`,
+        SUM(CASE WHEN ptc.account_head = '{retencion_renta_por_terceros}' THEN ptc.tax_amount ELSE 0 END) AS `Retención Renta por Terceros`,
+        SUM(CASE WHEN ptc.account_head = '{isr_percibido}' THEN ptc.tax_amount ELSE 0 END) AS `ISR Percibido`,
+        SUM(CASE WHEN ptc.account_head = '{impuesto_selectivo_al_consumo}' THEN ptc.tax_amount ELSE 0 END) AS `Impuesto Selectivo al Consumo`,
+        SUM(CASE WHEN ptc.account_head = '{otros_impuestos_tasas}' THEN ptc.tax_amount ELSE 0 END) AS `Otros Impuestos/Tasas`,
+        SUM(CASE WHEN ptc.account_head = '{propina_legal}' THEN ptc.tax_amount ELSE 0 END) AS `Monto Propina Legal`,
+        CASE WHEN COALESCE(SUM(CASE WHEN LOWER(pe.mode_of_payment) = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Efectivo`,
+        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Cheque/ Transferencia/ Depósito`,
+        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Tarjeta Débito/Crédito`,
+        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Venta a Crédito`,
+        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Bonos o Certificados de Regalo' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Bonos o Certificados de Regalo' THEN pe.paid_amount ELSE 0 END), 0) END AS `Bonos o Certificados de Regalo`,
+        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Permuta`,
+        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Otras Formas de Ventas' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Otras Formas de Ventas' THEN pe.paid_amount ELSE 0 END), 0) END AS `Otras Formas de Ventas`
+    FROM 
+        `tabSales Invoice` AS sinv 
+    JOIN 
+        tabCustomer AS cust ON sinv.customer = cust.name 
+    LEFT JOIN 
+        `tabPayment Entry Reference` AS per ON per.reference_name = sinv.name
+    LEFT JOIN 
+        `tabPayment Entry` AS pe ON pe.name = per.parent
+    LEFT JOIN 
+        `tabTipo de Ingreso` AS tipo_ing ON sinv.custom_tipo_de_ingreso = tipo_ing.tipo_de_ingreso
+    LEFT JOIN 
+        `tabSales Taxes and Charges` AS ptc ON sinv.name = ptc.parent
+    WHERE 
+        sinv.custom_ncf NOT LIKE 'SINV-%%' 
+        AND sinv.docstatus = 1 
+        AND sinv.outstanding_amount = 0
+        AND sinv.posting_date < %(from_date)s
+        AND pe.posting_date BETWEEN %(from_date)s AND %(to_date)s
+        AND pe.docstatus = 1
+    GROUP BY 
+        sinv.name
+    """    
+
+    # Ejecutar la consulta
+    facturas = frappe.db.sql(query, {"from_date": from_date, "to_date": to_date}, as_dict=True)
+
+    # Número de registros
+    numero_registros = len(facturas)
+
+    # Crear el archivo en memoria usando UnicodeWriter
+    w = UnicodeWriter()
+
+    # Crear el archivo Excel en memoria
+    output = BytesIO()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte 607"
+
+    # Estilos
+    header_fill = PatternFill(start_color="008000", end_color="008000", fill_type="solid")  # Verde oscuro
+    header_font = Font(name="Tahoma", size=11, color="FFFFFF")
+    detail_font = Font(name="Tahoma", size=9, color="FFFFFF", bold=True)
+    header_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+    detail_fill = PatternFill(start_color="CCFFCC", end_color="CCFFCC", fill_type="solid")
+    text_style = NamedStyle(name="text_style", number_format="@")
+
+
+     # Agregar la primera línea
+    ws.merge_cells('A1:B1')
+    ws['A1'] = "RNC o Cédula"
+    ws['C1'] = rnc
+    ws['A1'].fill = header_fill
+    ws['A1'].font = header_font
+    ws['A1'].border = header_border
+    ws['B1'].border = header_border
+    ws['C1'].border = header_border  # Aplicar borde a la celda C1
+    ws['A1'].alignment = Alignment(horizontal='right')
+    ws['C1'].alignment = Alignment(horizontal='right')
+
+    # Agregar la segunda línea
+    ws.merge_cells('A2:B2')
+    ws['A2'] = "Periodo"
+    ws['C2'] = periodo
+    ws['A2'].fill = header_fill
+    ws['A2'].font = header_font
+    ws['A2'].border = header_border
+    ws['B2'].border = header_border
+    ws['C2'].border = header_border
+    ws['A2'].alignment = Alignment(horizontal='right')
+    ws['C2'].alignment = Alignment(horizontal='right')
+
+    # Agregar la tercera línea
+    ws.merge_cells('A3:B3')
+    ws['A3'] = "Cantidad Registros"
+    ws['C3'] = numero_registros
+    ws['A3'].fill = header_fill
+    ws['A3'].font = header_font
+    ws['A3'].border = header_border
+    ws['B3'].border = header_border
+    ws['C3'].border = header_border
+    ws['A3'].alignment = Alignment(horizontal='right')
+    ws['C3'].alignment = Alignment(horizontal='right')
+
+    # Dejar un renglón en blanco
+    ws.append([])
+
+    # Agregar el encabezado de detalles
+    ws.merge_cells('B5:X5')  # Combinar hasta la columna Z5
+    ws['B5'] = "Detalles"
+    ws['B5'].alignment = Alignment(horizontal='center')
+    ws['B5'].fill = header_fill
+    ws['B5'].font = detail_font
+    ws['B5'].border = header_border
+
+    # Agregar la fila de números de columna
+    column_numbers = ["",1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]
+    ws.append(column_numbers)
+    for col_num in range(2, 25):
+        cell = ws.cell(row=6, column=col_num)
+        cell.fill = header_fill
+        cell.font = detail_font
+        cell.border = header_border
+        cell.alignment = Alignment(horizontal='center')  # Centrar el texto
+
+    # Agregar el encabezado de las columnas
+    headers = [
+        "No",
+        "RNC/Cédula o Pasaporte",
+        "Tipo Identificación",
+        "Número Comprobante Fiscal",
+        "Número Comprobante Fiscal Modificado",
+        "Tipo de Ingreso",
+        "Fecha Comprobante",
+        "Fecha de Retención",
+        "Monto Facturado",
+        "ITBIS Facturado",
+        "ITBIS Retenido por Terceros",
+        "ITBIS Percibido",
+        "Retención Renta por Terceros",
+        "ISR Percibido",
+        "Impuesto Selectivo al Consumo",
+        "Otros Impuestos/Tasas",
+        "Monto Propina Legal",
+        "Efectivo",
+        "Cheque/ Transferencia/ Depósito",
+        "Tarjeta Débito/Crédito",
+        "Venta a Crédito",
+        "Bonos o Certificados de Regalo",
+        "Permuta",
+        "Otras Formas de Ventas"
+    ]
+    ws.append(headers)
+    for col_num in range(1, 25):
+        cell = ws.cell(row=7, column=col_num)
+        cell.fill = header_fill
+        cell.font = detail_font
+        cell.border = header_border
+        cell.alignment = Alignment(horizontal='center', vertical='center',wrap_text=True)  # Centrar y ajustar el texto
+
+    # Ajustar el ancho de las columnas
+    column_widths = {
+        'A': 10,
+        'B': 18,
+        'C': 22,
+        'D': 25,
+        'E': 28,
+        'F': 40,
+        'G': 18,
+        'H': 18,
+        'I': 18,
+        'J': 18,
+        'K': 18,
+        'L': 18,
+        'M': 18,
+        'N': 18,
+        'O': 18,
+        'P': 18,
+        'Q': 18,
+        'R': 18,
+        'S': 18,
+        'T': 18,
+        'U': 18,
+        'V': 18,
+        'W': 18,
+        'X': 18
+    }
+    for col, width in column_widths.items():
+        ws.column_dimensions[col].width = width
+
+    # Llenar las columnas del reporte 607 con los datos obtenidos
+    for idx, factura in enumerate(facturas, start=1):
+        if factura['Tipo Identificación'] == "RNC":
+            tipo_identificacion = "1"
+        elif factura['Tipo Identificación'] == "Cédula":
+            tipo_identificacion = "2"
+        elif factura['Tipo Identificación'] == "Pasaporte":
+            tipo_identificacion = "3"
+        else:
+            tipo_identificacion = "2"  # Valor por defecto si no coincide con ninguno
+
+        fecha_retencion = ""
+        if factura['Fecha de Retención'] and (
+            factura['ITBIS Retenido por Terceros'] not in ["", 0] or 
+            factura['Retención Renta por Terceros'] not in ["", 0]
+        ):
+            fecha_retencion = factura['Fecha de Retención'].strftime("%Y%m%d")
+        row = [
+            idx,
+            factura['RNC/Cédula o Pasaporte'].replace("-", "") if factura['RNC/Cédula o Pasaporte'] else '',
+            tipo_identificacion,
+            factura['Número Comprobante Fiscal'] or '',
+            factura['Número Comprobante Fiscal Modificado'] or '',
+            factura['Tipo de Ingreso'] if  factura['Tipo de Ingreso'] else '',
+            # '',
+            # '',
+            factura['Fecha Comprobante'].strftime("%Y%m%d") if factura['Fecha Comprobante'] else '',
+            fecha_retencion,
+            format_amount(factura['Monto Facturado']),
+            format_amount(factura['ITBIS Facturado']),
+            format_amount(factura['ITBIS Retenido por Terceros']) or '',
+            format_amount(factura['ITBIS Percibido']) or '',
+            format_amount(factura['Retención Renta por Terceros']) or '',
+            format_amount(factura['ISR Percibido']) or '',
+            format_amount(factura['Impuesto Selectivo al Consumo']) or '',
+            format_amount(factura['Otros Impuestos/Tasas']) or '',
+            format_amount(factura['Monto Propina Legal']) or '',
+            format_amount(factura['Efectivo']),
+            format_amount(factura['Cheque/ Transferencia/ Depósito']),
+            format_amount(factura['Tarjeta Débito/Crédito']),
+            format_amount(factura['Venta a Crédito']) or '',
+            format_amount(factura['Bonos o Certificados de Regalo']) or '',
+            format_amount(factura['Permuta']) or '',
+            format_amount(factura['Otras Formas de Ventas']) or ''
+        ]
+        ws.append(row)
+        if "text_style" not in wb.named_styles:
+            wb.add_named_style(text_style)
+        for col_num in range(1, 25):
+            cell = ws.cell(row=idx + 7, column=col_num)
+            cell.style = text_style  # Aplicar el estilo de texto plano
+            if col_num == 1:
+                cell.fill = detail_fill
+                cell.alignment = Alignment(horizontal='center')  # Centrar el texto horizontalmente
+
+    # Guardar el archivo Excel en memoria
+    wb.save(output)
+    output.seek(0)
+
+    # Devolver el contenido del archivo Excel como descarga
+    frappe.response['filename'] = "Reporte_607_%s.xlsx" % time.strftime("%Y%m%d_%H%M%S")
+    frappe.response['filecontent'] = output.getvalue()
     frappe.response['type'] = 'download'

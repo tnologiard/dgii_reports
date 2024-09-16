@@ -11,6 +11,11 @@ import time
 import os
 from frappe import _
 from io import StringIO
+from io import BytesIO
+from datetime import datetime
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, PatternFill, Font, Border, Side, NamedStyle
+
 
 class Reporte606(Document):
 	pass
@@ -355,13 +360,6 @@ def get_csv_file_address(from_date, to_date, decimal_places=2):
     frappe.response['doctype'] = "Reporte_606_" + str(int(time.time()))
 
 
-import os
-import time
-from io import BytesIO
-from datetime import datetime
-from openpyxl import Workbook
-from openpyxl.styles import Alignment, PatternFill, Font, Border, Side, NamedStyle
-
 
 def get_payment_method_id(invoice_name):
     payment_entries = frappe.db.sql("""
@@ -489,8 +487,14 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             '' AS `NCF o Documento Modificado`,  # No disponible
             pinv.bill_date AS `Fecha Comprobante`,
             pe.reference_date AS `Fecha Pago`,
-            pinv.monto_facturado_servicios AS `Monto Facturado en Servicios`,
-            pinv.monto_facturado_bienes AS `Monto Facturado en Bienes`,
+            (SELECT COALESCE(SUM(pii.amount), 0)
+            FROM `tabPurchase Invoice Item` pii
+            JOIN `tabItem` item ON pii.item_code = item.item_code
+            WHERE pii.parent = pinv.name AND item.item_type = 'Servicios') AS `Monto Facturado en Servicios`,
+            (SELECT COALESCE(SUM(pii.amount), 0)
+            FROM `tabPurchase Invoice Item` pii
+            JOIN `tabItem` item ON pii.item_code = item.item_code
+            WHERE pii.parent = pinv.name AND item.item_type = 'Bienes') AS `Monto Facturado en Bienes`,
             pinv.base_total AS `Total Monto Facturado`,
             (SELECT SUM(CASE
                 WHEN ptc2.account_head = {itbis_facturado} THEN ptc2.tax_amount
@@ -584,10 +588,10 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
     ws.title = "Reporte 606"
 
     # Estilos
-    header_fill = PatternFill(start_color="006400", end_color="006400", fill_type="solid")  # Verde oscuro
+    header_fill = PatternFill(start_color="008000", end_color="008000", fill_type="solid")  # Verde oscuro
     header_font = Font(color="FFFFFF", bold=True)
     header_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
-    detail_fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
+    detail_fill = PatternFill(start_color="CCFFCC", end_color="CCFFCC", fill_type="solid")
     text_style = NamedStyle(name="text_style", number_format="@")
 
     # Agregar la primera línea
@@ -599,6 +603,8 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
     ws['A1'].border = header_border
     ws['B1'].border = header_border
     ws['C1'].border = header_border  # Aplicar borde a la celda C1
+    ws['A1'].alignment = Alignment(horizontal='right')
+    ws['C1'].alignment = Alignment(horizontal='right')
 
     # Agregar la segunda línea
     ws.merge_cells('A2:B2')
@@ -609,16 +615,20 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
     ws['A2'].border = header_border
     ws['B2'].border = header_border
     ws['C2'].border = header_border
+    ws['A2'].alignment = Alignment(horizontal='right')
+    ws['C2'].alignment = Alignment(horizontal='right')
 
     # Agregar la tercera línea
     ws.merge_cells('A3:B3')
-    ws['A3'] = "Cantidad registros"
+    ws['A3'] = "Cantidad Registros"
     ws['C3'] = numero_registros
     ws['A3'].fill = header_fill
     ws['A3'].font = header_font
     ws['A3'].border = header_border
     ws['B3'].border = header_border
     ws['C3'].border = header_border
+    ws['A3'].alignment = Alignment(horizontal='right')
+    ws['C3'].alignment = Alignment(horizontal='right')
 
     # Dejar un renglón en blanco
     ws.append([])
@@ -688,7 +698,7 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
 
     # Ajustar el ancho de las columnas
     column_widths = {
-        'A': 15,
+        'A': 10,
         'B': 15,
         'C': 10,
         'D': 50,
