@@ -56,14 +56,6 @@
   "tipo_comprobante": "Comprobante Fiscal Electrónico"
  },
  {
-  "codigo": "04",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:51:40.420392",
-  "name": "Notas de Crédito-04",
-  "tipo_comprobante": "Notas de Crédito"
- },
- {
   "codigo": "03",
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
@@ -86,6 +78,14 @@
   "modified": "2024-08-07 03:52:02.310960",
   "name": "Comprobante de Compras-11",
   "tipo_comprobante": "Comprobante de Compras"
+ },
+ {
+  "codigo": "04",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:51:40.420392",
+  "name": "Notas de Crédito-04",
+  "tipo_comprobante": "Notas de Crédito"
  },
  {
   "codigo": "01",

@@ -1,5 +1,8 @@
+console.log("custom_cancel.js is loaded");
+
 frappe.ui.form.on('Sales Invoice', {
     onload: function(frm) {
+        console.log("Sales Invoice form loaded");
         frm._cancel = function(btn, callback, on_error, skip_confirm) {
             const me = this;
 
@@ -57,13 +60,34 @@ frappe.ui.form.on('Sales Invoice', {
             };
 
             const prompt_and_cancel = () => {
+                console.log("prompt_and_cancel called");
                 // Verificar si el doctype es Sales Invoice o Purchase Invoice
-                if (me.doctype === 'Sales Invoice' || me.doctype === 'Purchase Invoice') {
-                    prompt_for_cancellation_reason(me).then(() => {
+                if (frm.doc.doctype === 'Sales Invoice') {
+                    const ncf = frm.doc.custom_ncf || '';
+                    console.log("Sales Invoice NCF:", ncf);
+                    if (ncf && ['B01', 'B04', 'B14'].some(prefix => ncf.startsWith(prefix))) {
+                        console.log("Prompting for cancellation reason for Sales Invoice");
+                        prompt_for_cancellation_reason(frm).then(() => {
+                            cancel_doc();
+                        }).catch(() => {
+                            me.handle_save_fail(btn, on_error);
+                        });
+                    } else {
                         cancel_doc();
-                    }).catch(() => {
-                        me.handle_save_fail(btn, on_error);
-                    });
+                    }
+                } else if (frm.doc.doctype === 'Purchase Invoice') {
+                    const ncf = frm.doc.bill_no || '';
+                    console.log("Purchase Invoice NCF:", ncf);
+                    if (ncf && ['B11', 'B13'].some(prefix => ncf.startsWith(prefix))) {
+                        console.log("Prompting for cancellation reason for Purchase Invoice");
+                        prompt_for_cancellation_reason(frm).then(() => {
+                            cancel_doc();
+                        }).catch(() => {
+                            me.handle_save_fail(btn, on_error);
+                        });
+                    } else {
+                        cancel_doc();
+                    }
                 } else {
                     // Si no es Sales Invoice o Purchase Invoice, proceder con la cancelación sin solicitar razón
                     cancel_doc();
@@ -74,9 +98,15 @@ frappe.ui.form.on('Sales Invoice', {
                 prompt_and_cancel();
             } else {
                 frappe.confirm(
-                    __("Permanently Cancel {0}?", [this.docname]),
-                    prompt_and_cancel,
-                    me.handle_save_fail(btn, on_error)
+                    __("Permanently Cancel {0}?", [frm.docname]),
+                    function() {
+                        console.log("User confirmed cancellation");
+                        prompt_and_cancel();
+                    },
+                    function() {
+                        console.log("User cancelled the confirmation dialog");
+                        me.handle_save_fail(btn, on_error);
+                    }
                 );
             }
         };
@@ -85,6 +115,7 @@ frappe.ui.form.on('Sales Invoice', {
 
 frappe.ui.form.on('Purchase Invoice', {
     onload: function(frm) {
+        console.log("Purchase Invoice form loaded");
         frm._cancel = function(btn, callback, on_error, skip_confirm) {
             const me = this;
 
@@ -142,13 +173,34 @@ frappe.ui.form.on('Purchase Invoice', {
             };
 
             const prompt_and_cancel = () => {
+                console.log("prompt_and_cancel called");
                 // Verificar si el doctype es Sales Invoice o Purchase Invoice
-                if (me.doctype === 'Sales Invoice' || me.doctype === 'Purchase Invoice') {
-                    prompt_for_cancellation_reason(me).then(() => {
+                if (frm.doc.doctype === 'Sales Invoice') {
+                    const ncf = frm.doc.custom_ncf || '';
+                    console.log("Sales Invoice NCF:", ncf);
+                    if (ncf && ['B01', 'B04', 'B14'].some(prefix => ncf.startsWith(prefix))) {
+                        console.log("Prompting for cancellation reason for Sales Invoice");
+                        prompt_for_cancellation_reason(frm).then(() => {
+                            cancel_doc();
+                        }).catch(() => {
+                            me.handle_save_fail(btn, on_error);
+                        });
+                    } else {
                         cancel_doc();
-                    }).catch(() => {
-                        me.handle_save_fail(btn, on_error);
-                    });
+                    }
+                } else if (frm.doc.doctype === 'Purchase Invoice') {
+                    const ncf = frm.doc.bill_no || '';
+                    console.log("Purchase Invoice NCF:", ncf);
+                    if (ncf && ['B11', 'B13'].some(prefix => ncf.startsWith(prefix))) {
+                        console.log("Prompting for cancellation reason for Purchase Invoice");
+                        prompt_for_cancellation_reason(frm).then(() => {
+                            cancel_doc();
+                        }).catch(() => {
+                            me.handle_save_fail(btn, on_error);
+                        });
+                    } else {
+                        cancel_doc();
+                    }
                 } else {
                     // Si no es Sales Invoice o Purchase Invoice, proceder con la cancelación sin solicitar razón
                     cancel_doc();
@@ -159,9 +211,15 @@ frappe.ui.form.on('Purchase Invoice', {
                 prompt_and_cancel();
             } else {
                 frappe.confirm(
-                    __("Permanently Cancel {0}?", [this.docname]),
-                    prompt_and_cancel,
-                    me.handle_save_fail(btn, on_error)
+                    __("Permanently Cancel {0}?", [frm.docname]),
+                    function() {
+                        console.log("User confirmed cancellation");
+                        prompt_and_cancel();
+                    },
+                    function() {
+                        console.log("User cancelled the confirmation dialog");
+                        me.handle_save_fail(btn, on_error);
+                    }
                 );
             }
         };

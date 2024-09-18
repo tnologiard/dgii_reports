@@ -193,10 +193,19 @@ def get_file_address(from_date, to_date, decimal_places=2):
     itbis_percibido = settings.itbis_percibido_607 or ''
     isr_percibido = settings.isr_percibido_607 or ''
     impuesto_selectivo_al_consumo = settings.isc_607 or ''
-    otros_impuestos_tasas = settings.otros_impuestos_tasas_607 or ''   
     propina_legal = settings.propina_legal_607 or ''
     itbis_retenido_por_terceros = settings.ret_607_itbis_retenido_por_terceros or ''
     retencion_renta_por_terceros = settings.ret_607_retencion_renta_por_terceros or ''
+
+    # Obtener las cuentas de la tabla otros_impuestos
+    otros_impuestos_cuentas = [frappe.db.escape(item.cuenta) for item in settings.otros_impuestos_tasas_607]
+
+    # Construir las condiciones SQL para otros_impuestos
+    if otros_impuestos_cuentas:
+        otros_impuestos_condition_ptc = " OR ".join([f"ptc.account_head = {cuenta}" for cuenta in otros_impuestos_cuentas])
+        otros_impuestos_sql_ptc = f"SUM(CASE WHEN {otros_impuestos_condition_ptc} THEN ptc.tax_amount ELSE 0 END) AS `Otros Impuestos/Tasas`"
+    else:
+        otros_impuestos_sql_ptc = "0 AS `Otros Impuestos/Tasas`"
 
     efectivo = "01 - EFECTIVO"
     cheque_transferencia_deposito = "02 - CHEQUES/TRANSFERENCIAS/DEPÓSITO"
@@ -205,179 +214,71 @@ def get_file_address(from_date, to_date, decimal_places=2):
     venta_credito = "08 - VENTA CREDITO"
     bonos_certificados_regalo = "09 - BONOS O CERTIFICADOS DE REGALO"
     otras_formas_ventas = "10 - OTRAS FORMAS DE VENTAS"
+
     # Consulta SQL para obtener los datos necesarios
     query = f"""
-    SELECT 
-        cust.tax_id AS `RNC/Cédula o Pasaporte`, 
-        cust.custom_tipo_rnc AS `Tipo Identificación`,
-        sinv.custom_ncf AS `Número Comprobante Fiscal`, 
-        sinv.custom_return_against_ncf AS `Número Comprobante Fiscal Modificado`,
-        CONCAT(tipo_ing.codigo, ' - ', tipo_ing.tipo_de_ingreso) AS `Tipo de Ingreso`,        
-        sinv.posting_date AS `Fecha Comprobante`, 
-        sinv.due_date AS `Fecha de Retención`,
-        sinv.base_total AS `Monto Facturado`, 
-        SUM(
-            CASE 
-                WHEN ptc.account_head = '{itbis_facturado}' 
-                THEN ptc.tax_amount 
-                ELSE 0 
-            END
-        ) AS `ITBIS Facturado`,
-        SUM(
-            CASE 
-                WHEN ptc.account_head = '{itbis_retenido_por_terceros}' 
-                THEN ptc.tax_amount 
-                ELSE 0 
-            END
-        ) AS `ITBIS Retenido por Terceros`,
-        SUM(
-            CASE 
-                WHEN ptc.account_head = '{itbis_percibido}' 
-                THEN ptc.tax_amount 
-                ELSE 0 
-            END
-        ) AS `ITBIS Percibido`,
-        SUM(
-            CASE 
-                WHEN ptc.account_head = '{retencion_renta_por_terceros}' 
-                THEN ptc.tax_amount 
-                ELSE 0 
-            END
-        ) AS `Retención Renta por Terceros`,
-        SUM(
-            CASE 
-                WHEN ptc.account_head = '{isr_percibido}' 
-                THEN ptc.tax_amount 
-                ELSE 0 
-            END
-        ) AS `ISR Percibido`,
-        SUM(
-            CASE 
-                WHEN ptc.account_head = '{impuesto_selectivo_al_consumo}' 
-                THEN ptc.tax_amount 
-                ELSE 0 
-            END
-        ) AS `Impuesto Selectivo al Consumo`,
-        SUM(
-            CASE 
-                WHEN ptc.account_head = '{otros_impuestos_tasas}' 
-                THEN ptc.tax_amount 
-                ELSE 0 
-            END
-        ) AS `Otros Impuestos/Tasas`,
-        SUM(
-            CASE 
-                WHEN ptc.account_head = '{propina_legal}' 
-                THEN ptc.tax_amount 
-                ELSE 0 
-            END
-        ) AS `Monto Propina Legal`,
-        CASE 
-            WHEN COALESCE(SUM(CASE WHEN LOWER(pe.mode_of_payment) = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
-            THEN '' 
-            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) 
-        END AS `Efectivo`,
-        CASE 
-            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
-            THEN '' 
-            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) 
-        END AS `Cheque/ Transferencia/ Depósito`,
-        CASE 
-            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
-            THEN '' 
-            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) 
-        END AS `Tarjeta Débito/Crédito`,
-        CASE 
-            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
-            THEN '' 
-            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) 
-        END AS `Venta a Crédito`,
-        CASE 
-            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{bonos_certificados_regalo}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
-            THEN '' 
-            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{bonos_certificados_regalo}' THEN pe.paid_amount ELSE 0 END), 0) 
-        END AS `Bonos o Certificados de Regalo`,
-        CASE 
-            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
-            THEN '' 
-            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) 
-        END AS `Permuta`,
-        CASE 
-            WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{otras_formas_ventas}' THEN pe.paid_amount ELSE 0 END), 0) = 0 
-            THEN '' 
-            ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{otras_formas_ventas}' THEN pe.paid_amount ELSE 0 END), 0) 
-        END AS `Otras Formas de Ventas`
-    FROM 
-        `tabSales Invoice` AS sinv 
-    JOIN 
-        tabCustomer AS cust ON sinv.customer = cust.name 
-    LEFT JOIN 
-        `tabPayment Entry Reference` AS per ON per.reference_name = sinv.name
-    LEFT JOIN 
-        `tabPayment Entry` AS pe ON pe.name = per.parent
-    LEFT JOIN 
-        `tabTipo de Ingreso` AS tipo_ing ON sinv.custom_tipo_de_ingreso = tipo_ing.tipo_de_ingreso
-    LEFT JOIN 
-        `tabSales Taxes and Charges` AS ptc ON sinv.name = ptc.parent
-    WHERE 
-        sinv.custom_ncf NOT LIKE 'SINV-%%' 
-        AND sinv.docstatus = 1 
-        AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
-    GROUP BY 
-        sinv.name
+    SELECT cust.tax_id AS `RNC/Cédula o Pasaporte`, cust.custom_tipo_rnc AS `Tipo Identificación`,
+    sinv.custom_ncf AS `Número Comprobante Fiscal`, sinv.custom_return_against_ncf AS `Número Comprobante Fiscal Modificado`,
+    CONCAT(tipo_ing.codigo, ' - ', tipo_ing.tipo_de_ingreso) AS `Tipo de Ingreso`, sinv.posting_date AS `Fecha Comprobante`,
+    sinv.due_date AS `Fecha de Retención`, sinv.base_total AS `Monto Facturado`,
+    SUM(CASE WHEN ptc.account_head = '{itbis_facturado}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Facturado`,
+    SUM(CASE WHEN ptc.account_head = '{itbis_retenido_por_terceros}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Retenido por Terceros`,
+    SUM(CASE WHEN ptc.account_head = '{itbis_percibido}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Percibido`,
+    SUM(CASE WHEN ptc.account_head = '{retencion_renta_por_terceros}' THEN ptc.tax_amount ELSE 0 END) AS `Retención Renta por Terceros`,
+    SUM(CASE WHEN ptc.account_head = '{isr_percibido}' THEN ptc.tax_amount ELSE 0 END) AS `ISR Percibido`,
+    SUM(CASE WHEN ptc.account_head = '{impuesto_selectivo_al_consumo}' THEN ptc.tax_amount ELSE 0 END) AS `Impuesto Selectivo al Consumo`,
+    {otros_impuestos_sql_ptc},
+    SUM(CASE WHEN ptc.account_head = '{propina_legal}' THEN ptc.tax_amount ELSE 0 END) AS `Monto Propina Legal`,
+    CASE WHEN COALESCE(SUM(CASE WHEN LOWER(pe.mode_of_payment) = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Efectivo`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Cheque/ Transferencia/ Depósito`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Tarjeta Débito/Crédito`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Venta a Crédito`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{bonos_certificados_regalo}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{bonos_certificados_regalo}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Bonos o Certificados de Regalo`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Permuta`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{otras_formas_ventas}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{otras_formas_ventas}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Otras Formas de Ventas`
+    FROM `tabSales Invoice` AS sinv 
+    JOIN tabCustomer AS cust ON sinv.customer = cust.name 
+    LEFT JOIN `tabPayment Entry Reference` AS per ON per.reference_name = sinv.name
+    LEFT JOIN `tabPayment Entry` AS pe ON pe.name = per.parent
+    LEFT JOIN `tabTipo de Ingreso` AS tipo_ing ON sinv.custom_tipo_de_ingreso = tipo_ing.tipo_de_ingreso
+    LEFT JOIN `tabSales Taxes and Charges` AS ptc ON sinv.name = ptc.parent
+    WHERE sinv.custom_ncf NOT LIKE 'SINV-%%' AND sinv.docstatus = 1 AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
+    GROUP BY sinv.name
 
     UNION
 
-    SELECT 
-        cust.tax_id AS `RNC/Cédula o Pasaporte`, 
-        cust.custom_tipo_rnc AS `Tipo Identificación`,
-        sinv.custom_ncf AS `Número Comprobante Fiscal`, 
-        sinv.custom_return_against_ncf AS `Número Comprobante Fiscal Modificado`,
-        CONCAT(tipo_ing.codigo, ' - ', tipo_ing.tipo_de_ingreso) AS `Tipo de Ingreso`,        
-        sinv.posting_date AS `Fecha Comprobante`, 
-        sinv.due_date AS `Fecha de Retención`,
-        sinv.base_total AS `Monto Facturado`, 
-        SUM(CASE WHEN ptc.account_head = '{itbis_facturado}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Facturado`,
-        SUM(CASE WHEN ptc.account_head = '{itbis_retenido_por_terceros}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Retenido por Terceros`,
-        SUM(CASE WHEN ptc.account_head = '{itbis_percibido}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Percibido`,
-        SUM(CASE WHEN ptc.account_head = '{retencion_renta_por_terceros}' THEN ptc.tax_amount ELSE 0 END) AS `Retención Renta por Terceros`,
-        SUM(CASE WHEN ptc.account_head = '{isr_percibido}' THEN ptc.tax_amount ELSE 0 END) AS `ISR Percibido`,
-        SUM(CASE WHEN ptc.account_head = '{impuesto_selectivo_al_consumo}' THEN ptc.tax_amount ELSE 0 END) AS `Impuesto Selectivo al Consumo`,
-        SUM(CASE WHEN ptc.account_head = '{otros_impuestos_tasas}' THEN ptc.tax_amount ELSE 0 END) AS `Otros Impuestos/Tasas`,
-        SUM(CASE WHEN ptc.account_head = '{propina_legal}' THEN ptc.tax_amount ELSE 0 END) AS `Monto Propina Legal`,
-        CASE WHEN COALESCE(SUM(CASE WHEN LOWER(pe.mode_of_payment) = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Efectivo`,
-        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Cheque/ Transferencia/ Depósito`,
-        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Tarjeta Débito/Crédito`,
-        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Venta a Crédito`,
-        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Bonos o Certificados de Regalo' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Bonos o Certificados de Regalo' THEN pe.paid_amount ELSE 0 END), 0) END AS `Bonos o Certificados de Regalo`,
-        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Permuta`,
-        CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Otras Formas de Ventas' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Otras Formas de Ventas' THEN pe.paid_amount ELSE 0 END), 0) END AS `Otras Formas de Ventas`
-    FROM 
-        `tabSales Invoice` AS sinv 
-    JOIN 
-        tabCustomer AS cust ON sinv.customer = cust.name 
-    LEFT JOIN 
-        `tabPayment Entry Reference` AS per ON per.reference_name = sinv.name
-    LEFT JOIN 
-        `tabPayment Entry` AS pe ON pe.name = per.parent
-    LEFT JOIN 
-        `tabTipo de Ingreso` AS tipo_ing ON sinv.custom_tipo_de_ingreso = tipo_ing.tipo_de_ingreso
-    LEFT JOIN 
-        `tabSales Taxes and Charges` AS ptc ON sinv.name = ptc.parent
-    WHERE 
-        sinv.custom_ncf NOT LIKE 'SINV-%%' 
-        AND sinv.docstatus = 1 
-        AND sinv.outstanding_amount = 0
-        AND sinv.posting_date < %(from_date)s
-        AND pe.posting_date BETWEEN %(from_date)s AND %(to_date)s
-        AND pe.docstatus = 1
-    GROUP BY 
-        sinv.name
-    """    
+    SELECT cust.tax_id AS `RNC/Cédula o Pasaporte`, cust.custom_tipo_rnc AS `Tipo Identificación`,
+    sinv.custom_ncf AS `Número Comprobante Fiscal`, sinv.custom_return_against_ncf AS `Número Comprobante Fiscal Modificado`,
+    CONCAT(tipo_ing.codigo, ' - ', tipo_ing.tipo_de_ingreso) AS `Tipo de Ingreso`, sinv.posting_date AS `Fecha Comprobante`,
+    sinv.due_date AS `Fecha de Retención`, sinv.base_total AS `Monto Facturado`,
+    SUM(CASE WHEN ptc.account_head = '{itbis_facturado}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Facturado`,
+    SUM(CASE WHEN ptc.account_head = '{itbis_retenido_por_terceros}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Retenido por Terceros`,
+    SUM(CASE WHEN ptc.account_head = '{itbis_percibido}' THEN ptc.tax_amount ELSE 0 END) AS `ITBIS Percibido`,
+    SUM(CASE WHEN ptc.account_head = '{retencion_renta_por_terceros}' THEN ptc.tax_amount ELSE 0 END) AS `Retención Renta por Terceros`,
+    SUM(CASE WHEN ptc.account_head = '{isr_percibido}' THEN ptc.tax_amount ELSE 0 END) AS `ISR Percibido`,
+    SUM(CASE WHEN ptc.account_head = '{impuesto_selectivo_al_consumo}' THEN ptc.tax_amount ELSE 0 END) AS `Impuesto Selectivo al Consumo`,
+    {otros_impuestos_sql_ptc},
+    SUM(CASE WHEN ptc.account_head = '{propina_legal}' THEN ptc.tax_amount ELSE 0 END) AS `Monto Propina Legal`,
+    CASE WHEN COALESCE(SUM(CASE WHEN LOWER(pe.mode_of_payment) = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{efectivo}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Efectivo`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{cheque_transferencia_deposito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Cheque/ Transferencia/ Depósito`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{tarjeta_debito_credito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Tarjeta Débito/Crédito`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{venta_credito}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Venta a Crédito`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Bonos o Certificados de Regalo' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Bonos o Certificados de Regalo' THEN pe.paid_amount ELSE 0 END), 0) END AS `Bonos o Certificados de Regalo`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = '{permuta}' THEN pe.paid_amount ELSE 0 END), 0) END AS `Permuta`,
+    CASE WHEN COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Otras Formas de Ventas' THEN pe.paid_amount ELSE 0 END), 0) = 0 THEN '' ELSE COALESCE(SUM(CASE WHEN pe.mode_of_payment = 'Otras Formas de Ventas' THEN pe.paid_amount ELSE 0 END), 0) END AS `Otras Formas de Ventas`
+    FROM `tabSales Invoice` AS sinv 
+    JOIN tabCustomer AS cust ON sinv.customer = cust.name 
+    LEFT JOIN `tabPayment Entry Reference` AS per ON per.reference_name = sinv.name
+    LEFT JOIN `tabPayment Entry` AS pe ON pe.name = per.parent
+    LEFT JOIN `tabTipo de Ingreso` AS tipo_ing ON sinv.custom_tipo_de_ingreso = tipo_ing.tipo_de_ingreso
+    LEFT JOIN `tabSales Taxes and Charges` AS ptc ON sinv.name = ptc.parent
+    WHERE sinv.custom_ncf NOT LIKE 'SINV-%%' AND sinv.docstatus = 1 AND sinv.outstanding_amount = 0
+    AND sinv.posting_date < %(from_date)s AND pe.posting_date BETWEEN %(from_date)s AND %(to_date)s AND pe.docstatus = 1
+    GROUP BY sinv.name
+    """
 
     # Ejecutar la consulta
     facturas = frappe.db.sql(query, {"from_date": from_date, "to_date": to_date}, as_dict=True)
-
     # Número de registros
     numero_registros = len(facturas)
 

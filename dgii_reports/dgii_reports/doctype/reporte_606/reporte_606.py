@@ -367,7 +367,7 @@ def get_payment_method_id(invoice_name):
         FROM `tabPayment Entry Reference` per
         JOIN `tabPayment Entry` pe ON per.parent = pe.name
         JOIN `tabPurchase Invoice` pinv ON per.reference_name = pinv.name
-        WHERE per.reference_name = %s
+        WHERE per.reference_name = %s AND pe.docstatus != 2
     """, (invoice_name,), as_dict=True)
     
     # Filtrar las entradas de pago con outstanding_amount == 0
@@ -379,6 +379,7 @@ def get_payment_method_id(invoice_name):
         forma_de_pago = payment_entries[0].mode_of_payment
         return forma_de_pago
     return '04 - COMPRA A CREDITO'
+
 
 @frappe.whitelist()
 def get_excel_file_address(from_date, to_date, decimal_places=2):
@@ -398,9 +399,55 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
     itbis_proporcionalidad = frappe.db.escape(settings.itbis_proporcionalidad or '')
     itbis_costo = frappe.db.escape(settings.itbis_costo or '')
     isc = frappe.db.escape(settings.isc or '')
-    otros_impuestos = frappe.db.escape(settings.otros_impuestos or '')
     propina_legal = frappe.db.escape(settings.propina_legal or '')
     isr = frappe.db.escape(settings.ret606_isr or '')
+
+    # Obtener las cuentas de la tabla otros_impuestos
+    otros_impuestos_cuentas = [frappe.db.escape(item.cuenta) for item in settings.otros_impuestos]
+
+    # Construir la condición SQL para otros_impuestos
+    if otros_impuestos_cuentas:
+        otros_impuestos_condition = " OR ".join([f"ptc.account_head = {cuenta}" for cuenta in otros_impuestos_cuentas])
+        otros_impuestos_sql = f"SUM(CASE WHEN {otros_impuestos_condition} THEN ptc.tax_amount ELSE 0 END) AS `Otros Impuesto/Tasas`"
+    else:
+        otros_impuestos_sql = "0 AS `Otros Impuesto/Tasas`"
+
+import frappe
+from datetime import datetime
+
+@frappe.whitelist()
+def get_excel_file_address(from_date, to_date, decimal_places=2):
+    # Obtener el tax_id del doctype Company
+    company = frappe.get_doc("Company", frappe.defaults.get_user_default("Company"))
+    rnc = company.tax_id.replace("-", "") if company.tax_id else ""
+
+    # Calcular el periodo
+    from_date_obj = datetime.strptime(from_date, "%Y-%m-%d")
+    to_date_obj = datetime.strptime(to_date, "%Y-%m-%d")
+    periodo = f"{from_date_obj.year}{min(from_date_obj.month, to_date_obj.month):02d}"
+
+    # Recuperar los valores de los campos del Doctype DGII Reports Settings
+    settings = frappe.get_single("DGII Reports Settings")
+    itbis_facturado = frappe.db.escape(settings.itbis_facturado or '')
+    itbis_retenido = frappe.db.escape(settings.ret606_itbis_retenido or '')
+    itbis_proporcionalidad = frappe.db.escape(settings.itbis_proporcionalidad or '')
+    itbis_costo = frappe.db.escape(settings.itbis_costo or '')
+    isc = frappe.db.escape(settings.isc or '')
+    propina_legal = frappe.db.escape(settings.propina_legal or '')
+    isr = frappe.db.escape(settings.ret606_isr or '')
+
+    # Obtener las cuentas de la tabla otros_impuestos
+    otros_impuestos_cuentas = [frappe.db.escape(item.cuenta) for item in settings.otros_impuestos]
+
+    # Construir las condiciones SQL para otros_impuestos
+    if otros_impuestos_cuentas:
+        otros_impuestos_condition_ptc = " OR ".join([f"ptc.account_head = {cuenta}" for cuenta in otros_impuestos_cuentas])
+        otros_impuestos_condition_ptc2 = " OR ".join([f"ptc2.account_head = {cuenta}" for cuenta in otros_impuestos_cuentas])
+        otros_impuestos_sql_ptc = f"SUM(CASE WHEN {otros_impuestos_condition_ptc} THEN ptc.tax_amount ELSE 0 END) AS `Otros Impuesto/Tasas`"
+        otros_impuestos_sql_ptc2 = f"(SELECT SUM(CASE WHEN {otros_impuestos_condition_ptc2} THEN ptc2.tax_amount ELSE 0 END) FROM `tabPurchase Taxes and Charges` ptc2 WHERE ptc2.parent = pinv.name) AS `Otros Impuesto/Tasas`"
+    else:
+        otros_impuestos_sql_ptc = "0 AS `Otros Impuesto/Tasas`"
+        otros_impuestos_sql_ptc2 = "0 AS `Otros Impuesto/Tasas`"
 
     # Consulta SQL para obtener los datos necesarios
     facturas = frappe.db.sql(f"""
@@ -415,7 +462,7 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             pinv.bill_no AS `NCF`,
             '' AS `NCF o Documento Modificado`,  # No disponible
             pinv.bill_date AS `Fecha Comprobante`,
-            pe.reference_date AS `Fecha Pago`,
+            MAX(pe.reference_date) AS `Fecha Pago`,
             (SELECT COALESCE(SUM(pii.amount), 0)
             FROM `tabPurchase Invoice Item` pii
             JOIN `tabItem` item ON pii.item_code = item.item_code
@@ -454,7 +501,7 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
                 ELSE 0
             END) AS `Impuesto Selectivo al Consumo`,
             SUM(CASE
-                WHEN ptc.account_head = {otros_impuestos} THEN ptc.tax_amount
+                WHEN {otros_impuestos_condition_ptc} THEN ptc.tax_amount
                 ELSE 0
             END) AS `Otros Impuesto/Tasas`,
             SUM(CASE
@@ -486,7 +533,7 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             pinv.bill_no AS `NCF`,
             '' AS `NCF o Documento Modificado`,  # No disponible
             pinv.bill_date AS `Fecha Comprobante`,
-            pe.reference_date AS `Fecha Pago`,
+            MAX(pe.reference_date) AS `Fecha Pago`,
             (SELECT COALESCE(SUM(pii.amount), 0)
             FROM `tabPurchase Invoice Item` pii
             JOIN `tabItem` item ON pii.item_code = item.item_code
@@ -537,7 +584,7 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             FROM `tabPurchase Taxes and Charges` ptc2
             WHERE ptc2.parent = pinv.name) AS `Impuesto Selectivo al Consumo`,
             (SELECT SUM(CASE
-                WHEN ptc2.account_head = {otros_impuestos} THEN ptc2.tax_amount
+                WHEN {otros_impuestos_condition_ptc2} THEN ptc2.tax_amount
                 ELSE 0
             END)
             FROM `tabPurchase Taxes and Charges` ptc2
@@ -577,6 +624,9 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
         GROUP BY pinv.name
         ORDER BY `Fecha Comprobante`, `Factura Actual`
     """, (from_date, to_date, from_date, to_date, from_date), as_dict=True)
+
+    # Calcular el número de registros
+    numero_registros = len(facturas)
 
     # Calcular el número de registros
     numero_registros = len(facturas)
@@ -735,14 +785,14 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
         if factura['Es Nota de Débito']:
             original_invoice = frappe.get_doc("Purchase Invoice", factura['Factura Original'])
             ncf_modificado = original_invoice.bill_no
-            forma_de_pago = "06 - NOTA DE CREDITO" # "Nota de Crédito"
+            forma_de_pago = "06 - NOTA DE CREDITO"  # "Nota de Crédito"
 
         tipo_bienes_y_servicios = factura['Tipo Bienes y Servicios Comprados']
 
         # Verificar si alguna columna de retención tiene un monto mayor a cero
         fecha_pago = ''
         if (factura['ITBIS Retenido'] and float(factura['ITBIS Retenido']) > 0) or \
-           (factura['Monto Retención Renta'] and float(factura['Monto Retención Renta']) > 0):
+        (factura['Monto Retención Renta'] and float(factura['Monto Retención Renta']) > 0):
             fecha_pago = factura['Fecha Pago']
 
         # Separar las fechas en AAAAMM y DD
@@ -756,6 +806,12 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             fecha_pago_aaaamm = fecha_pago.strftime("%Y%m")
             fecha_pago_dd = fecha_pago.strftime("%d")
 
+        # Calcular el número de pagos
+        num_pagos = frappe.db.count('Payment Entry Reference', {'reference_name': factura['Factura Actual']})
+
+        # Dividir cada impuesto entre el número de pagos si es mayor o igual a dos
+        divisor = num_pagos if num_pagos >= 2 else 1
+
         row = [
             idx,
             factura['RNC o Cedula'] or '',
@@ -767,21 +823,21 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             fecha_comprobante_dd,
             fecha_pago_aaaamm,
             fecha_pago_dd,
-            format_amount(factura['Monto Facturado en Servicios']),
-            format_amount(factura['Monto Facturado en Bienes']),
-            format_amount(factura['Total Monto Facturado']),
-            format_amount(factura['ITBIS Facturado']),
-            format_amount(factura['ITBIS Retenido']),
+            format_amount(factura['Monto Facturado en Servicios'] ),
+            format_amount(factura['Monto Facturado en Bienes'] ),
+            format_amount(factura['Total Monto Facturado'] ),
+            format_amount(factura['ITBIS Facturado'] / divisor),
+            format_amount(factura['ITBIS Retenido'] / divisor),
             factura['ITBIS sujeto a Proporcionalidad (Art. 349)'] or '',
             factura['ITBIS llevado al Costo'] or '',
             factura['ITBIS por Adelantar'] or '',
             factura['ITBIS percibido en compras'] or '',
             factura['Tipo de Retencion en ISR'] or '',
-            format_amount(factura['Monto Retención Renta']),
+            format_amount(factura['Monto Retención Renta'] / divisor),
             factura['ISR Percibido en compras'] or '',
-            format_amount(factura['Impuesto Selectivo al Consumo']),
-            format_amount(factura['Otros Impuesto/Tasas']),
-            format_amount(factura['Monto Propina Legal']),
+            format_amount(factura['Impuesto Selectivo al Consumo'] / divisor),
+            format_amount(factura['Otros Impuesto/Tasas'] / divisor),
+            format_amount(factura['Monto Propina Legal'] / divisor),
             forma_de_pago
         ]
         ws.append(row)
@@ -793,7 +849,6 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             if col_num == 1:
                 cell.fill = detail_fill
                 cell.alignment = Alignment(horizontal='center')  # Centrar el texto horizontalmente
-
     # Guardar el archivo Excel en memoria
     wb.save(output)
     output.seek(0)
