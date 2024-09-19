@@ -442,12 +442,18 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
     # Construir las condiciones SQL para otros_impuestos
     if otros_impuestos_cuentas:
         otros_impuestos_condition_ptc = " OR ".join([f"ptc.account_head = {cuenta}" for cuenta in otros_impuestos_cuentas])
-        otros_impuestos_condition_ptc2 = " OR ".join([f"ptc2.account_head = {cuenta}" for cuenta in otros_impuestos_cuentas])
         otros_impuestos_sql_ptc = f"SUM(CASE WHEN {otros_impuestos_condition_ptc} THEN ptc.tax_amount ELSE 0 END) AS `Otros Impuesto/Tasas`"
-        otros_impuestos_sql_ptc2 = f"(SELECT SUM(CASE WHEN {otros_impuestos_condition_ptc2} THEN ptc2.tax_amount ELSE 0 END) FROM `tabPurchase Taxes and Charges` ptc2 WHERE ptc2.parent = pinv.name) AS `Otros Impuesto/Tasas`"
     else:
         otros_impuestos_sql_ptc = "0 AS `Otros Impuesto/Tasas`"
-        otros_impuestos_sql_ptc2 = "0 AS `Otros Impuesto/Tasas`"
+
+    # Subconsulta para obtener los otros impuestos
+    otros_impuestos_subquery = f"""
+        SELECT
+            ptc.parent AS parent,
+            {otros_impuestos_sql_ptc}
+        FROM `tabPurchase Taxes and Charges` ptc
+        GROUP BY ptc.parent
+    """
 
     # Consulta SQL para obtener los datos necesarios
     facturas = frappe.db.sql(f"""
@@ -472,42 +478,32 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             JOIN `tabItem` item ON pii.item_code = item.item_code
             WHERE pii.parent = pinv.name AND item.item_type = 'Bienes') AS `Monto Facturado en Bienes`,
             pinv.base_total AS `Total Monto Facturado`,
-            SUM(CASE
-                WHEN ptc.account_head = {itbis_facturado} THEN ptc.tax_amount
-                ELSE 0
-            END) AS `ITBIS Facturado`,
-            SUM(CASE
-                WHEN ptc.account_head = {itbis_retenido} THEN ptc.tax_amount
-                ELSE 0
-            END) AS `ITBIS Retenido`,
-            SUM(CASE
-                WHEN ptc.account_head = {itbis_proporcionalidad} THEN ptc.tax_amount
-                ELSE 0
-            END) AS `ITBIS sujeto a Proporcionalidad (Art. 349)`,
-            SUM(CASE
-                WHEN ptc.account_head = {itbis_costo} THEN ptc.tax_amount
-                ELSE 0
-            END) AS `ITBIS llevado al Costo`,
+            (SELECT COALESCE(SUM(ptc.tax_amount), 0)
+            FROM `tabPurchase Taxes and Charges` ptc
+            WHERE ptc.parent = pinv.name AND ptc.account_head = {itbis_facturado}) AS `ITBIS Facturado`,
+            (SELECT COALESCE(SUM(ptc.tax_amount), 0)
+            FROM `tabPurchase Taxes and Charges` ptc
+            WHERE ptc.parent = pinv.name AND ptc.account_head = {itbis_retenido}) AS `ITBIS Retenido`,
+            (SELECT COALESCE(SUM(ptc.tax_amount), 0)
+            FROM `tabPurchase Taxes and Charges` ptc
+            WHERE ptc.parent = pinv.name AND ptc.account_head = {itbis_proporcionalidad}) AS `ITBIS sujeto a Proporcionalidad (Art. 349)`,
+            (SELECT COALESCE(SUM(ptc.tax_amount), 0)
+            FROM `tabPurchase Taxes and Charges` ptc
+            WHERE ptc.parent = pinv.name AND ptc.account_head = {itbis_costo}) AS `ITBIS llevado al Costo`,
             '' AS `ITBIS por Adelantar`,  # No disponible
             '' AS `ITBIS percibido en compras`,  # No disponible
             pinv.retention_type AS `Tipo de Retencion en ISR`,
-            SUM(CASE
-                WHEN ptc.account_head = {isr} THEN ptc.tax_amount
-                ELSE 0
-            END) AS `Monto Retención Renta`,
+            (SELECT COALESCE(SUM(ptc.tax_amount), 0)
+            FROM `tabPurchase Taxes and Charges` ptc
+            WHERE ptc.parent = pinv.name AND ptc.account_head = {isr}) AS `Monto Retención Renta`,
             '' AS `ISR Percibido en compras`,  # No disponible
-            SUM(CASE
-                WHEN ptc.account_head = {isc} THEN ptc.tax_amount
-                ELSE 0
-            END) AS `Impuesto Selectivo al Consumo`,
-            SUM(CASE
-                WHEN {otros_impuestos_condition_ptc} THEN ptc.tax_amount
-                ELSE 0
-            END) AS `Otros Impuesto/Tasas`,
-            SUM(CASE
-                WHEN ptc.account_head = {propina_legal} THEN ptc.tax_amount
-                ELSE 0
-            END) AS `Monto Propina Legal`,
+            (SELECT COALESCE(SUM(ptc.tax_amount), 0)
+            FROM `tabPurchase Taxes and Charges` ptc
+            WHERE ptc.parent = pinv.name AND ptc.account_head = {isc}) AS `Impuesto Selectivo al Consumo`,
+            COALESCE(otros_impuestos.`Otros Impuesto/Tasas`, 0) AS `Otros Impuesto/Tasas`,
+            (SELECT COALESCE(SUM(ptc.tax_amount), 0)
+            FROM `tabPurchase Taxes and Charges` ptc
+            WHERE ptc.parent = pinv.name AND ptc.account_head = {propina_legal}) AS `Monto Propina Legal`,
             pinv.is_return AS `Es Nota de Débito`,
             pinv.return_against AS `Factura Original`,
             pinv.name AS `Factura Actual`
@@ -515,9 +511,9 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
         LEFT JOIN `tabSupplier` supl ON supl.name = pinv.supplier
         LEFT JOIN `tabPayment Entry Reference` per ON per.reference_name = pinv.name
         LEFT JOIN `tabPayment Entry` pe ON pe.name = per.parent
-        LEFT JOIN `tabPurchase Taxes and Charges` ptc ON ptc.parent = pinv.name
+        LEFT JOIN ({otros_impuestos_subquery}) otros_impuestos ON otros_impuestos.parent = pinv.name
         WHERE pinv.docstatus = 1
-        AND pinv.bill_date BETWEEN %s AND %s
+          AND pinv.bill_date BETWEEN %s AND %s
         GROUP BY pinv.name
 
         UNION
@@ -543,58 +539,32 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
             JOIN `tabItem` item ON pii.item_code = item.item_code
             WHERE pii.parent = pinv.name AND item.item_type = 'Bienes') AS `Monto Facturado en Bienes`,
             pinv.base_total AS `Total Monto Facturado`,
-            (SELECT SUM(CASE
-                WHEN ptc2.account_head = {itbis_facturado} THEN ptc2.tax_amount
-                ELSE 0
-            END)
+            (SELECT COALESCE(SUM(ptc2.tax_amount), 0)
             FROM `tabPurchase Taxes and Charges` ptc2
-            WHERE ptc2.parent = pinv.name) AS `ITBIS Facturado`,
-            (SELECT SUM(CASE
-                WHEN ptc2.account_head = {itbis_retenido} THEN ptc2.tax_amount
-                ELSE 0
-            END)
+            WHERE ptc2.parent = pinv.name AND ptc2.account_head = {itbis_facturado}) AS `ITBIS Facturado`,
+            (SELECT COALESCE(SUM(ptc2.tax_amount), 0)
             FROM `tabPurchase Taxes and Charges` ptc2
-            WHERE ptc2.parent = pinv.name) AS `ITBIS Retenido`,
-            (SELECT SUM(CASE
-                WHEN ptc2.account_head = {itbis_proporcionalidad} THEN ptc2.tax_amount
-                ELSE 0
-            END)
+            WHERE ptc2.parent = pinv.name AND ptc2.account_head = {itbis_retenido}) AS `ITBIS Retenido`,
+            (SELECT COALESCE(SUM(ptc2.tax_amount), 0)
             FROM `tabPurchase Taxes and Charges` ptc2
-            WHERE ptc2.parent = pinv.name) AS `ITBIS sujeto a Proporcionalidad (Art. 349)`,
-            (SELECT SUM(CASE
-                WHEN ptc2.account_head = {itbis_costo} THEN ptc2.tax_amount
-                ELSE 0
-            END)
+            WHERE ptc2.parent = pinv.name AND ptc2.account_head = {itbis_proporcionalidad}) AS `ITBIS sujeto a Proporcionalidad (Art. 349)`,
+            (SELECT COALESCE(SUM(ptc2.tax_amount), 0)
             FROM `tabPurchase Taxes and Charges` ptc2
-            WHERE ptc2.parent = pinv.name) AS `ITBIS llevado al Costo`,
+            WHERE ptc2.parent = pinv.name AND ptc2.account_head = {itbis_costo}) AS `ITBIS llevado al Costo`,
             '' AS `ITBIS por Adelantar`,  # No disponible
             '' AS `ITBIS percibido en compras`,  # No disponible
             pinv.retention_type AS `Tipo de Retencion en ISR`,
-            (SELECT SUM(CASE
-                WHEN ptc2.account_head = {isr} THEN ptc2.tax_amount
-                ELSE 0
-            END)
+            (SELECT COALESCE(SUM(ptc2.tax_amount), 0)
             FROM `tabPurchase Taxes and Charges` ptc2
-            WHERE ptc2.parent = pinv.name) AS `Monto Retención Renta`,
+            WHERE ptc2.parent = pinv.name AND ptc2.account_head = {isr}) AS `Monto Retención Renta`,
             '' AS `ISR Percibido en compras`,  # No disponible
-            (SELECT SUM(CASE
-                WHEN ptc2.account_head = {isc} THEN ptc2.tax_amount
-                ELSE 0
-            END)
+            (SELECT COALESCE(SUM(ptc2.tax_amount), 0)
             FROM `tabPurchase Taxes and Charges` ptc2
-            WHERE ptc2.parent = pinv.name) AS `Impuesto Selectivo al Consumo`,
-            (SELECT SUM(CASE
-                WHEN {otros_impuestos_condition_ptc2} THEN ptc2.tax_amount
-                ELSE 0
-            END)
+            WHERE ptc2.parent = pinv.name AND ptc2.account_head = {isc}) AS `Impuesto Selectivo al Consumo`,
+            COALESCE(otros_impuestos.`Otros Impuesto/Tasas`, 0) AS `Otros Impuesto/Tasas`,
+            (SELECT COALESCE(SUM(ptc2.tax_amount), 0)
             FROM `tabPurchase Taxes and Charges` ptc2
-            WHERE ptc2.parent = pinv.name) AS `Otros Impuesto/Tasas`,
-            (SELECT SUM(CASE
-                WHEN ptc2.account_head = {propina_legal} THEN ptc2.tax_amount
-                ELSE 0
-            END)
-            FROM `tabPurchase Taxes and Charges` ptc2
-            WHERE ptc2.parent = pinv.name) AS `Monto Propina Legal`,
+            WHERE ptc2.parent = pinv.name AND ptc2.account_head = {propina_legal}) AS `Monto Propina Legal`,
             pinv.is_return AS `Es Nota de Débito`,
             pinv.return_against AS `Factura Original`,
             pinv.name AS `Factura Actual`
@@ -602,35 +572,18 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
         LEFT JOIN `tabSupplier` supl ON supl.name = pinv.supplier
         LEFT JOIN `tabPayment Entry Reference` per ON per.reference_name = pinv.name
         LEFT JOIN `tabPayment Entry` pe ON pe.name = per.parent
+        LEFT JOIN ({otros_impuestos_subquery}) otros_impuestos ON otros_impuestos.parent = pinv.name
         WHERE pinv.docstatus = 1
-        AND pe.reference_date BETWEEN %s AND %s
-        AND pinv.bill_date < %s
-        AND pinv.outstanding_amount = 0
-        AND (
-            (SELECT SUM(CASE
-                WHEN ptc2.account_head = {itbis_retenido} THEN ptc2.tax_amount
-                ELSE 0
-            END)
-            FROM `tabPurchase Taxes and Charges` ptc2
-            WHERE ptc2.parent = pinv.name) > 0
-            OR
-            (SELECT SUM(CASE
-                WHEN ptc2.account_head = {isr} THEN ptc2.tax_amount
-                ELSE 0
-            END)
-            FROM `tabPurchase Taxes and Charges` ptc2
-            WHERE ptc2.parent = pinv.name) > 0
-        )
+          AND pe.reference_date BETWEEN %s AND %s
+          AND pinv.bill_date < %s
+          AND pinv.outstanding_amount = 0
         GROUP BY pinv.name
         ORDER BY `Fecha Comprobante`, `Factura Actual`
     """, (from_date, to_date, from_date, to_date, from_date), as_dict=True)
 
     # Calcular el número de registros
     numero_registros = len(facturas)
-
-    # Calcular el número de registros
-    numero_registros = len(facturas)
-
+    
     # Crear el archivo Excel en memoria
     output = BytesIO()
     wb = Workbook()
@@ -811,6 +764,7 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
 
         # Dividir cada impuesto entre el número de pagos si es mayor o igual a dos
         divisor = num_pagos if num_pagos >= 2 else 1
+        divisor = 1
 
         row = [
             idx,
@@ -859,14 +813,44 @@ def get_excel_file_address(from_date, to_date, decimal_places=2):
     frappe.response['type'] = 'download'
 
 
-# --+--------+------------------------+-------------------------+----------------------------+-----------------------+----------------------------+---------------+----------------+------------------+----------------+----------------------------------+-----------------+-----------------+-----------------+---------------------------------------+-------------------------------------------+-----------------------------+-------------+-------------------------------------+
-#   | row_id | included_in_print_rate | included_in_paid_amount | account_head               | description           | is_tax_withholding_account | rate          | cost_center    | account_currency | tax_amount     | tax_amount_after_discount_amount | total           | base_tax_amount | base_total      | base_tax_amount_after_discount_amount | item_wise_tax_detail                      | parent                      | parentfield | parenttype                          |
-# --+--------+------------------------+-------------------------+----------------------------+-----------------------+----------------------------+---------------+----------------+------------------+----------------+----------------------------------+-----------------+-----------------+-----------------+---------------------------------------+-------------------------------------------+-----------------------------+-------------+-------------------------------------+
-#   | NULL   |                      0 |                       0 | ITBIS - RD                 | ITBIS @ 16.0          |                          0 |  18.000000000 | Principal - RD | NULL             |    0.000000000 |                      0.000000000 |     0.000000000 |     0.000000000 |     0.000000000 |                           0.000000000 | NULL                                      | Dominican Republic Tax - RD | taxes       | Purchase Taxes and Charges Template |
-#   | NULL   |                      0 |                       0 | Propina Legal - RD         | Propina Legal         |                          0 |  10.000000000 | Principal - RD | DOP              |    0.000000000 |                      0.000000000 |     0.000000000 |     0.000000000 |     0.000000000 |                           0.000000000 | NULL                                      | Restaurantes - RD           | taxes       | Purchase Taxes and Charges Template |
-#   | NULL   |                      0 |                       0 | ITBIS - RD                 | ITBIS                 |                          0 |  18.000000000 | Principal - RD | NULL             |    0.000000000 |                      0.000000000 |     0.000000000 |     0.000000000 |     0.000000000 |                           0.000000000 | NULL                                      | Restaurantes - RD           | taxes       | Purchase Taxes and Charges Template |
-#   | NULL   |                      0 |                       0 | ITBIS - RD                 | ITBIS @ 16.0          |                          0 |  18.000000000 | Principal - RD | NULL             | 4500.000000000 |                   4500.000000000 | 29500.000000000 |  4500.000000000 | 29500.000000000 |                        4500.000000000 | {"Consultoria empresarial":[18.0,4500.0]} | ACC-PINV-2024-00046         | taxes       | Purchase Invoice                    |
-#   | NULL   |                      0 |                       0 | ITBIS - RD                 | ITBIS                 |                          0 |  18.000000000 | Principal - RD | NULL             |    0.000000000 |                      0.000000000 |     0.000000000 |     0.000000000 |     0.000000000 |                           0.000000000 | NULL                                      | ITBIS RET 100% & ISR% - RD  | taxes       | Purchase Taxes and Charges Template |
-# t | 1      |                      0 |                       0 | ITBIS Retenido - 100% - RD | ITBIS Retenido - 100% |                          0 | 100.000000000 | Principal - RD | DOP              |    0.000000000 |                      0.000000000 |     0.000000000 |     0.000000000 |     0.000000000 |                           0.000000000 | NULL                                      | ITBIS RET 100% & ISR% - RD  | taxes       | Purchase Taxes and Charges Template |
-#   | NULL   |                      0 |                       0 | ISR - 2 % - RD             | ISR - 2 %             |                          0 |   2.000000000 | Principal - RD | DOP              |    0.000000000 |                      0.000000000 |     0.000000000 |     0.000000000 |     0.000000000 |                           0.000000000 | NULL                                      | ITBIS RET 100% & ISR% - RD  | taxes       | Purchase Taxes and Charges Template |
-# --+--------+------------------------+-------------------------+----------------------------+-----------------------+----------------------------+---------------+----------------+------------------+----------------+----------------------------------+-----------------+-----------------+-----------------+---------------------------------------+-------------------------------------------+-----------------------------+-------------+-------------------------------------+
+# MariaDB [_d31ecb88ac1f70bf]> SELECT pinv.tax_id, pinv.tipo_bienes_y_servicios_comprados FROM `tabPurchase Invoice` pinv INNER JOIN `tabSupplier` supl ON supl.name = pinv.suppl
+#  Charges` ptc ON ptc.parent = pinv.name WHERE pinv.docstatus = 1;
+# +-----------+-------------------------------------------------+
+# | tax_id    | tipo_bienes_y_servicios_comprados               |
+# +-----------+-------------------------------------------------+
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# +-----------+-------------------------------------------------+
+# 6 rows in set (0.007 sec)
+
+# MariaDB [_d31ecb88ac1f70bf]> SELECT pinv.tax_id, pinv.tipo_bienes_y_servicios_comprados FROM `tabPurchase Invoice` pinv INNER JOIN `tabSupplier` supl ON supl.name = pinv.supplier LEFT JOIN `tabPayment Entry Reference` per ON per.reference_name = pinv.name LEFT JOIN `tabPayment Entry` pe ON pe.name = per.parent WHERE pinv.docstatus = 1;
+# +-----------+-------------------------------------------------+
+# | tax_id    | tipo_bienes_y_servicios_comprados               |
+# +-----------+-------------------------------------------------+
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# +-----------+-------------------------------------------------+
+# 2 rows in set (0.025 sec)
+
+# MariaDB [_d31ecb88ac1f70bf]> SELECT pinv.tax_id, pinv.tipo_bienes_y_servicios_comprados FROM `tabPurchase Invoice` pinv INNER JOIN `tabSupplier` supl ON supl.name = pinv.supplier LEFT JOIN `tabPayment Entry Reference` per ON per.reference_name = pinv.name WHERE pinv.docstatus = 1;
+# +-----------+-------------------------------------------------+
+# | tax_id    | tipo_bienes_y_servicios_comprados               |
+# +-----------+-------------------------------------------------+
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# +-----------+-------------------------------------------------+
+# 2 rows in set (0.015 sec)
+
+# MariaDB [_d31ecb88ac1f70bf]> SELECT pinv.tax_id, pinv.tipo_bienes_y_servicios_comprados FROM `tabPurchase Invoice` pinv INNER JOIN `tabSupplier` supl ON supl.name = pinv.supplier WHERE pinv.docstatus = 1;
+# +-----------+-------------------------------------------------+
+# | tax_id    | tipo_bienes_y_servicios_comprados               |
+# +-----------+-------------------------------------------------+
+# | 111000475 | 02-GASTOS POR TRABAJOS, SUMINISTROS Y SERVICIOS |
+# +-----------+-------------------------------------------------+
+# 1 row in set (0.001 sec)
+
+# MariaDB [_d31ecb88ac1f70bf]>

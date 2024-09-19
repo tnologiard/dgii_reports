@@ -65,7 +65,7 @@ frappe.ui.form.on('Sales Invoice', {
                 if (frm.doc.doctype === 'Sales Invoice') {
                     const ncf = frm.doc.custom_ncf || '';
                     console.log("Sales Invoice NCF:", ncf);
-                    if (ncf && ['B01', 'B04', 'B14'].some(prefix => ncf.startsWith(prefix))) {
+                    if (ncf && ['B01', 'B04', 'B14', 'B15', 'B16'].some(prefix => ncf.startsWith(prefix))) {
                         console.log("Prompting for cancellation reason for Sales Invoice");
                         prompt_for_cancellation_reason(frm).then(() => {
                             cancel_doc();
@@ -178,7 +178,7 @@ frappe.ui.form.on('Purchase Invoice', {
                 if (frm.doc.doctype === 'Sales Invoice') {
                     const ncf = frm.doc.custom_ncf || '';
                     console.log("Sales Invoice NCF:", ncf);
-                    if (ncf && ['B01', 'B04', 'B14'].some(prefix => ncf.startsWith(prefix))) {
+                    if (ncf && ['B01', 'B04', 'B14', 'B15', 'B16'].some(prefix => ncf.startsWith(prefix))) {
                         console.log("Prompting for cancellation reason for Sales Invoice");
                         prompt_for_cancellation_reason(frm).then(() => {
                             cancel_doc();

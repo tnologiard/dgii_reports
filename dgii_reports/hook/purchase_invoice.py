@@ -6,6 +6,7 @@ from dgii_reports.servicios.consultas_web_dgii import ServicioConsultasWebDgii
 def common_validations(doc):
     """Función que realiza las validaciones comunes."""
     validate_tax_id(doc)
+    validate_bill_no_and_custom_flags(doc)
     validate_duplicate_ncf(doc)
 
 def validate(doc, event):
@@ -94,6 +95,7 @@ def validate_tax_category(doc):
         validate_tax_category_code(doc, tipo_comprobante_fiscal)
 
 def validate_tax_category_code(doc, tipo_comprobante_fiscal):
+    print(f"validate_tax_category_code: doc.custom_is_b11 = {doc.custom_is_b11}, doc.custom_is_b13 = {doc.custom_is_b13}")
     if doc.custom_is_b11:
         if tipo_comprobante_fiscal.codigo != '11':
             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para facturas de Comprobante de Compras.")
@@ -102,6 +104,16 @@ def validate_tax_category_code(doc, tipo_comprobante_fiscal):
         if tipo_comprobante_fiscal.codigo != '13':
             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para facturas de Comprobante para Gastos Menores.")
             raise frappe.ValidationError("Categoría de impuestos incorrecta para facturas de Comprobante para Gastos Menores.")
+    validate_bill_no_and_custom_flags(doc)
+
+def validate_bill_no_and_custom_flags(doc):
+    if doc.bill_no:
+        if doc.bill_no.startswith('B13') and not doc.custom_is_b13:
+            frappe.msgprint("Parece que está intentando registrar un Comprobante para Gastos Menores (B13). Por favor, seleccione la casilla correspondiente.")
+            raise frappe.ValidationError("Casilla 'Comprobante para Gastos Menores (B13)' no seleccionada.")
+        elif doc.bill_no.startswith('B14') and not doc.custom_is_b11:
+            frappe.msgprint("Parece que está intentando registrar un Comprobante de Compras (B14). Por favor, seleccione la casilla correspondiente.")
+            raise frappe.ValidationError("Casilla 'Comprobante de Compras (B14)' no seleccionada.")
 
 def validate_fiscal_document_expiry(conf):
     if conf.expira_el and getdate(nowdate()) > getdate(conf.expira_el):

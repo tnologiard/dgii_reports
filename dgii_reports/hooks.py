@@ -34,6 +34,7 @@ doctype_js = {
 	"Customer": "public/js/customer.js",
     "Supplier": "public/js/supplier.js",
     "Purchase Invoice": "public/js/purchase_invoice.js",
+    "Sales Invoice": "public/js/sales_invoice.js",
 }
 
 doctype_list_js = {"Sales Invoice" : "public/js/sales_invoice_list.js"}
@@ -172,9 +173,11 @@ doc_events = {
 # ------------------------------
 #
 override_whitelisted_methods = {
-    "erpnext.accounts.doctype.sales_invoice.sales_invoice.make_sales_return": "dgii_reports.api.make_sales_return"
+    "erpnext.accounts.doctype.sales_invoice.sales_invoice.make_sales_return": "dgii_reports.api.make_sales_return",
+    "erpnext.setup.doctype.transaction_deletion_record.transaction_deletion_record.get_doctypes_to_be_ignored": "dgii_reports.api.get_doctypes_to_be_ignored"
 }
-
+from erpnext.setup.doctype.transaction_deletion_record.transaction_deletion_record import get_doctypes_to_be_ignored
+get_doctypes_to_be_ignored = "dgii_reports.api.get_doctypes_to_be_ignored"
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,

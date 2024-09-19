@@ -72,7 +72,6 @@ frappe.listview_settings['Sales Invoice'] = {
             },
             standard: true,
         },
-        // Otras acciones que desees incluir
     ]
 };
 

@@ -136,7 +136,9 @@ def get_file_address(from_date, to_date, decimal_places=2):
         FROM 
             `tabSales Invoice` AS sinv 
         WHERE 
-            sinv.docstatus = 2 AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
+            sinv.docstatus = 2 
+            AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
+            AND sinv.name NOT IN (SELECT amended_from FROM `tabSales Invoice` WHERE amended_from IS NOT NULL)
 
         UNION
 
@@ -147,11 +149,15 @@ def get_file_address(from_date, to_date, decimal_places=2):
         FROM 
             `tabPurchase Invoice` AS pinv 
         WHERE 
-            pinv.docstatus = 2 AND pinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
-            AND (pinv.bill_no LIKE 'B13%%' OR pinv.bill_no LIKE 'B11%%')
+            pinv.docstatus = 2 
+            AND pinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
+            AND (pinv.bill_no LIKE 'B13%%' OR pinv.bill_no LIKE 'B14%%')
+            AND pinv.name NOT IN (SELECT amended_from FROM `tabPurchase Invoice` WHERE amended_from IS NOT NULL)
     """
     # Ejecutar la consulta
-    facturas = frappe.db.sql(query, {"from_date": from_date, "to_date": to_date}, as_dict=True)    # Número de registros
+    facturas = frappe.db.sql(query, {"from_date": from_date, "to_date": to_date}, as_dict=True)
+
+    # Número de registros
     numero_registros = len(facturas)
 
     # Crear el archivo Excel en memoria

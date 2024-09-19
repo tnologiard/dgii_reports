@@ -16,30 +16,6 @@
   "tipo_comprobante": "Comprobante de Registro Único de Ingresos"
  },
  {
-  "codigo": "14",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:52:58.060257",
-  "name": "Comprobante para Regímenes Especiales-14",
-  "tipo_comprobante": "Comprobante para Regímenes Especiales"
- },
- {
-  "codigo": "15",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:53:12.998988",
-  "name": "Comprobante Gubernamental-15",
-  "tipo_comprobante": "Comprobante Gubernamental"
- },
- {
-  "codigo": "16",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:53:29.596689",
-  "name": "Comprobante para Exportaciones-16",
-  "tipo_comprobante": "Comprobante para Exportaciones"
- },
- {
   "codigo": "17",
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
@@ -56,12 +32,36 @@
   "tipo_comprobante": "Comprobante Fiscal Electrónico"
  },
  {
+  "codigo": "16",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:53:29.596689",
+  "name": "Comprobante para Exportaciones-16",
+  "tipo_comprobante": "Comprobante para Exportaciones"
+ },
+ {
   "codigo": "03",
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:51:22.429544",
   "name": "Notas de Débito-03",
   "tipo_comprobante": "Notas de Débito"
+ },
+ {
+  "codigo": "14",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:52:58.060257",
+  "name": "Comprobante para Regímenes Especiales-14",
+  "tipo_comprobante": "Comprobante para Regímenes Especiales"
+ },
+ {
+  "codigo": "15",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:53:12.998988",
+  "name": "Comprobante Gubernamental-15",
+  "tipo_comprobante": "Comprobante Gubernamental"
  },
  {
   "codigo": "13",

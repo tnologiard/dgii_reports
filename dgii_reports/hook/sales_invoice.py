@@ -140,13 +140,26 @@ def validate_tax_category(doc):
     tipo_comprobante_fiscal = frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type)
     validate_tax_category_code(doc, tipo_comprobante_fiscal)
 
-def validate_tax_category_code(doc, tipo_comprobante_fiscal):
+
+def validate_tax_category_code(doc, tipo_comprobante_fiscal): 
     if doc.is_return:
-        if tipo_comprobante_fiscal.codigo != '04':
+        if tipo_comprobante_fiscal.codigo not in ['04']:
             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para notas de crédito.")
             raise frappe.ValidationError("Categoría de impuestos incorrecta para notas de crédito.")
+    elif doc.custom_is_b14:
+        if tipo_comprobante_fiscal.codigo not in ['14']:
+            frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante para Regímenes Especiales (B14).")
+            raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante para Regímenes Especiales (B14).")
+    elif doc.custom_is_b15:
+        if tipo_comprobante_fiscal.codigo not in ['15']:
+            frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante Gubernamental (B15).")
+            raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante Gubernamental (B15).")
+    elif doc.custom_is_b16:
+        if tipo_comprobante_fiscal.codigo not in ['16']:
+            frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante para Exportaciones (B16).")
+            raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante para Comprobante para Exportaciones (B16).")
     else:
-        if tipo_comprobante_fiscal.codigo != '01':
+        if tipo_comprobante_fiscal.codigo not in ['01']:
             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para facturas de crédito fiscal.")
             raise frappe.ValidationError("Categoría de impuestos incorrecta para facturas de crédito fiscal.")
 
