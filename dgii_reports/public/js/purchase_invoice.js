@@ -49,7 +49,7 @@ frappe.ui.form.on("Purchase Invoice", {
     // Se ejecuta cuando se valida el formulario antes de guardar
     validate(frm) {
         // Llama a las funciones de validación y ajuste de campos específicos
-        if (!frm.doc.custom_is_b13 || !frm.doc.custom_is_b11 == 1) {
+        if (!frm.doc.custom_is_b13 == 1 || !frm.doc.custom_is_b11 == 1) {
             frm.trigger("bill_no");
             frm.trigger("validate_cost_center");
             frm.trigger("validate_ncf");
@@ -142,6 +142,47 @@ frappe.ui.form.on("Purchase Invoice", {
             frm.set_df_property("custom_security_code", "hidden", 1);  // Oculta el campo custom_security_code
             frm.set_df_property("custom_security_code", "reqd", 0);  // Hace que custom_security_code no sea obligatorio
             frm.set_value("custom_require_security_code", false);  // Establece custom_require_security_code a false
+        }
+    },
+
+    validate_ncf(frm) {
+        let len = frm.doc.bill_no.length;  // Obtiene la longitud del bill_no
+        let valid_prefix = ["B01", "B04", "B11", "B13", "B14", "B15", "E31", "E34"];  // Prefijos válidos
+        
+        // Verifica si los campos custom_is_b11 o custom_is_b13 no están seleccionados
+        if (!frm.doc.custom_is_b11 && !frm.doc.custom_is_b13) {
+            // Verifica si la longitud de bill_no es 11 o 13 caracteres
+            if (![11, 13].includes(len)) {
+                // Muestra un mensaje de error si la longitud no es válida
+                frappe.msgprint(`El número de comprobante tiene <b>${len}</b> caracteres, deben ser <b>11</b> o <b>13</b> para la serie E.`);
+                frappe.validated = false;  // Detiene la validación y evita que se guarde el documento
+                frm.set_df_property("custom_security_code", "hidden", 1);  // Oculta el campo custom_security_code
+                frm.set_df_property("custom_security_code", "reqd", 0);  // Hace que custom_security_code no sea obligatorio
+                frm.set_value("custom_require_security_code", false);  // Establece custom_require_security_code a false
+                return;
+            }
+        
+            // Verifica si el prefijo del bill_no es válido
+            if (frm.doc.bill_no && !valid_prefix.includes(frm.doc.bill_no.substr(0, 3))) {
+                // Muestra un mensaje de error si el prefijo no es válido
+                frappe.msgprint(`El prefijo <b>${frm.doc.bill_no.substr(0, 3)}</b> del NCF ingresado no es válido.`);
+                frappe.validated = false;  // Detiene la validación y evita que se guarde el documento
+                frm.set_df_property("custom_security_code", "hidden", 1);  // Oculta el campo custom_security_code
+                frm.set_df_property("custom_security_code", "reqd", 0);  // Hace que custom_security_code no sea obligatorio
+                frm.set_value("custom_require_security_code", false);  // Establece custom_require_security_code a false
+                return;
+            }
+        
+            // Verifica si el prefijo del bill_no comienza con "E"
+            if (frm.doc.bill_no && frm.doc.bill_no.startsWith("E")) {
+                frm.set_df_property("custom_security_code", "hidden", 0);  // Muestra el campo custom_security_code
+                frm.set_df_property("custom_security_code", "reqd", 1);  // Hace que custom_security_code sea obligatorio
+                frm.set_value("custom_require_security_code", true);  // Establece custom_require_security_code a true
+            } else {
+                frm.set_df_property("custom_security_code", "hidden", 1);  // Oculta el campo custom_security_code
+                frm.set_df_property("custom_security_code", "reqd", 0);  // Hace que custom_security_code no sea obligatorio
+                frm.set_value("custom_require_security_code", false);  // Establece custom_require_security_code a false
+            }
         }
     },
 

@@ -6,7 +6,7 @@ from dgii_reports.servicios.consultas_web_dgii import ServicioConsultasWebDgii
 def common_validations(doc):
     """Función que realiza las validaciones comunes."""
     validate_tax_id(doc)
-    validate_bill_no_and_custom_flags(doc)
+    # validate_bill_no_and_custom_flags(doc)
     validate_duplicate_ncf(doc)
 
 def validate(doc, event):
@@ -16,7 +16,7 @@ def validate(doc, event):
 def before_save(doc, event):
     """Función que se ejecuta antes de guardar el documento."""
     common_validations(doc)
-    if doc.custom_is_b11 or doc.custom_is_b13:
+    if (doc.custom_is_b11 or doc.custom_is_b13) and not doc.amended_from:
         generate_new(doc)
         print(f"before_save: Se ha generado un nuevo NCF = {doc.bill_no}")
     else:
@@ -28,7 +28,7 @@ def before_save(doc, event):
 def before_submit(doc, event):
     """Función que se ejecuta antes de enviar el documento."""
     common_validations(doc)
-    if doc.custom_is_b11 or doc.custom_is_b13:
+    if (doc.custom_is_b11 or doc.custom_is_b13) and not doc.amended_from:
         generate_new(doc)
         print(f"before_submit: Se ha generado un nuevo NCF = {doc.bill_no}")
     else:

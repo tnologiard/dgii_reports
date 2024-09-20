@@ -1,5 +1,6 @@
 frappe.provide('dgii_reports.bulk_operations');
 
+// Implementación de submit_or_cancel
 dgii_reports.bulk_operations.submit_or_cancel = function(docnames, action = "submit", done = null) {
     action = action.toLowerCase();
     const task_id = Math.random().toString(36).slice(-5);
@@ -7,7 +8,7 @@ dgii_reports.bulk_operations.submit_or_cancel = function(docnames, action = "sub
 
     if (action === "cancel" && (this.doctype === "Purchase Invoice" || this.doctype === "Sales Invoice")) {
         const field = this.doctype === "Purchase Invoice" ? "bill_no" : "custom_ncf";
-        const prefix = this.doctype === "Purchase Invoice" ? ["B11", "B13"] : ["B01", "B04"];
+        const prefix = this.doctype === "Purchase Invoice" ? ["B11", "B13"] : ["B01", "B04", "B14", "B15","B16"];
         
         frappe.call({
             method: "frappe.client.get_list",
@@ -40,9 +41,9 @@ dgii_reports.bulk_operations.submit_or_cancel = function(docnames, action = "sub
                         ],
                         primary_action: (values) => {
                             // Actualizar el campo custom_codigo_de_anulacion antes de cancelar los documentos
-                            dgii_reports.bulk_operations.update_custom_codigo_de_anulacion(docs_to_cancel, values.tipo_de_anulacion)
+                            dgii_reports.bulk_operations.update_custom_codigo_de_anulacion.call(this, docs_to_cancel, values.tipo_de_anulacion)
                                 .then(() => {
-                                    dgii_reports.bulk_operations.proceed_with_cancellation(docnames, action, values.tipo_de_anulacion, docs_to_cancel, done);
+                                    dgii_reports.bulk_operations.proceed_with_cancellation.call(this, docnames, action, values.tipo_de_anulacion, docs_to_cancel, done);
                                 })
                                 .catch((error) => {
                                     console.error("Error updating custom_codigo_de_anulacion:", error);
@@ -52,12 +53,12 @@ dgii_reports.bulk_operations.submit_or_cancel = function(docnames, action = "sub
                     });
                     dialog.show();
                 } else {
-                    dgii_reports.bulk_operations.proceed_with_cancellation(docnames, action, null, [], done);
+                    dgii_reports.bulk_operations.proceed_with_cancellation.call(this, docnames, action, null, [], done);
                 }
             }
         });
     } else {
-        dgii_reports.bulk_operations.proceed_with_cancellation(docnames, action, null, [], done);
+        dgii_reports.bulk_operations.proceed_with_cancellation.call(this, docnames, action, null, [], done);
     }
 }
 
@@ -114,59 +115,10 @@ dgii_reports.bulk_operations.proceed_with_cancellation = function(docnames, acti
             // Manejar documentos exitosos
             if (successful_docnames.length) {
                 frappe.utils.play_sound(action);
-                if (done) done();
-                frappe.listview.refresh();  // Refresh la lista para que se refleje el cambio de estado
+                if (done) done.call(this);  // Asegurarse de que `this` se refiere al contexto correcto
             }
         })
         .finally(() => {
             frappe.realtime.task_unsubscribe(task_id);
         });
 }
-
-// if (frappe.listview_settings) {
-//     console.log("Listview settings found");
-
-//     // Función para sobrescribir submit_or_cancel
-//     function override_submit_or_cancel(doctype) {
-//         frappe.listview_settings[doctype] = frappe.listview_settings[doctype] || {};
-
-//         // Sobrescribir la función submit_or_cancel directamente
-//         frappe.listview_settings[doctype].submit_or_cancel = function(action) {
-//             console.log("Custom submit_or_cancel called for", doctype);
-//             custom_app.bulk_operations.submit_or_cancel.call(this, action);
-//         };
-//     }
-
-//     // Llamadas para sobrescribir submit_or_cancel para Sales Invoice y Purchase Invoice
-//     override_submit_or_cancel('Sales Invoice');
-//     override_submit_or_cancel('Purchase Invoice');
-// }
-
-// // Verificar si la clase BulkOperations está definida periódicamente
-// const intervalId = setInterval(() => {
-//     if (typeof BulkOperations !== 'undefined') {
-//         console.log("BulkOperations class found");
-
-//         // Guardar la referencia a la función original
-//         const original_submit_or_cancel = BulkOperations.prototype.submit_or_cancel;
-
-//         // Sobrescribir la función submit_or_cancel
-//         BulkOperations.prototype.submit_or_cancel = function(action) {
-//             console.log("Custom submit_or_cancel called");
-//             // Llamar a la función personalizada
-//             custom_app.bulk_operations.submit_or_cancel.call(this, action);
-//         };
-
-//         // Verificar si la función se sobrescribió correctamente
-//         if (BulkOperations.prototype.submit_or_cancel !== original_submit_or_cancel) {
-//             console.log("submit_or_cancel function successfully overwritten");
-//         } else {
-//             console.log("Failed to overwrite submit_or_cancel function");
-//         }
-
-//         // Limpiar el intervalo una vez que la clase se ha encontrado y la función se ha sobrescrito
-//         clearInterval(intervalId);
-//     } else {
-//         console.log("BulkOperations class not found, retrying...");
-//     }
-// }, 1000); // Verificar cada segundo
