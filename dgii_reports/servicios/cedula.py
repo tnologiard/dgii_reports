@@ -18,7 +18,7 @@ InvalidFormat: ...
 """
 
 from stdnum import luhn
-from stdnum.do import rnc
+from .rnc import rnc
 from stdnum.exceptions import *
 from stdnum.util import clean, isdigits
 
@@ -124,10 +124,12 @@ whitelist = set('''
 58005174058 90001200901
 '''.split())
 
+
 def compact(number):
     """Convierte el número a su representación mínima. Esto elimina los
     separadores válidos y los espacios en blanco alrededor del número."""
     return clean(number, ' -').strip()
+
 
 def validate(number):
     """Verifica si el número proporcionado es una cédula válida."""
@@ -138,7 +140,8 @@ def validate(number):
         return number  # Si está en la lista blanca, se considera válido
     if len(number) != 11:
         raise InvalidLength()  # Lanza una excepción si la longitud no es la esperada
-    return luhn.validate(number)  # Valida el número usando el algoritmo de Luhn
+    # Valida el número usando el algoritmo de Luhn
+    return luhn.validate(number)
 
 
 def is_valid(number):
