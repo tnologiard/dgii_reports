@@ -1,13 +1,5 @@
 [
  {
-  "codigo": "02",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:50:53.155431",
-  "name": "Factura de Consumo-02",
-  "tipo_comprobante": "Factura de Consumo"
- },
- {
   "codigo": "12",
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
@@ -78,6 +70,14 @@
   "modified": "2024-08-07 03:52:02.310960",
   "name": "Comprobante de Compras-11",
   "tipo_comprobante": "Comprobante de Compras"
+ },
+ {
+  "codigo": "02",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:50:53.155431",
+  "name": "Factura de Consumo-02",
+  "tipo_comprobante": "Factura de Consumo"
  },
  {
   "codigo": "04",

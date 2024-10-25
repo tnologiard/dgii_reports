@@ -19,7 +19,6 @@
   "secuencia_final",
   "column_break_tfmw",
   "document_type",
-  "tax_category",
   "select_print_heading"
  ],
  "fields": [
@@ -31,6 +30,7 @@
    "read_only": 1
   },
   {
+   "description": "Utilice el formato {serie}.{c\u00f3digo de tipo de comprobante} (sin las llaves) para nombrar la serie. Por ejemplo para Facturas de Cr\u00e9dito Fiscal la serie es B y el c\u00f3digo del tipo de comprobante es 01, deber\u00e1 nombrar la serie como B.01 ",
    "fieldname": "serie",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -89,13 +89,6 @@
    "label": "Habilitado"
   },
   {
-   "fieldname": "tax_category",
-   "fieldtype": "Link",
-   "label": "Categor\u00eda de Impuestos",
-   "options": "Tax Category",
-   "reqd": 1
-  },
-  {
    "fieldname": "document_type",
    "fieldtype": "Link",
    "label": "Tipo Comprobante Fiscal",
@@ -118,7 +111,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-08-08 05:31:24.674796",
+ "modified": "2024-10-25 18:32:03.331510",
  "modified_by": "Administrator",
  "module": "Dgii Reports",
  "name": "Comprobantes Fiscales NCF",

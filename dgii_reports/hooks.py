@@ -5,6 +5,9 @@ app_description = "La aplicación `dgii_reports` facilita a los contribuyentes e
 app_email = "tnologiard@gmail.com"
 app_license = "mit"
 # required_apps = []
+from frappe import _
+
+from . import __version__ as app_version
 
 # Includes in <head>
 

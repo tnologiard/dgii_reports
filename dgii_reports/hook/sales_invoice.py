@@ -21,9 +21,6 @@ def before_insert(doc, event):
     # Validar el monto total y el RNC o Cédula del cliente
     validate_customer_tax_id(doc)
 
-    # Validar la categoría de impuestos
-    validate_tax_category(doc)
-
     # Verificar condiciones para asignar un NCF
     if doc.is_return:
         print("before_insert: Es una nota de crédito, llamando a handle_credit_note_link")
@@ -45,13 +42,19 @@ def before_submit(doc, event):
     print(f"before_submit: doc.is_return = {doc.is_return}")
     print(f"before_submit: doc.custom_ncf (before) = {doc.custom_ncf}")
 
-    # Validar la categoría de impuestos
-    validate_tax_category(doc)
-
     # Verificar y generar un NCF único
     if not doc.custom_ncf:
         doc.custom_ncf = generate_new(doc)
         print(f"before_submit: Se ha generado un nuevo NCF = {doc.custom_ncf}")
+
+    if doc.custom_tipo_comprobante in ["Factura de Crédito Fiscal","Factura de Consumo","Notas de Crédito","Comprobante para Regímenes Especiales","Comprobante Gubernamental","Comprobante para Exportaciones"] and not doc.amended_from:
+        conf = get_serie_for_(doc)
+        current = cint(conf.secuencia_actual) + 1
+        conf.secuencia_actual = current
+        conf.db_update()
+        doc.custom_ncf = '{0}{1}{2:08d}'.format(conf.serie.split(".")[0], frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type).codigo, current)
+        doc.vencimiento_ncf = conf.expira_el
+        print(f"before_save: Se ha generado un nuevo NCF = {doc.custom_ncf}")
 
     print(f"before_submit: doc.custom_ncf (after) = {doc.custom_ncf}")
 
@@ -63,50 +66,6 @@ def get_document_type(doc):
     tipo_comprobante_fiscal = frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type)
     doc.custom_tipo_de_factura = tipo_comprobante_fiscal.codigo + "-" + tipo_comprobante_fiscal.tipo_comprobante
 
-def generate_new(doc):
-    conf = get_serie_for_(doc)
-    
-    if not conf.serie or not conf.document_type:
-        return ''
-    
-    # Obtener el tipo de comprobante fiscal
-    tipo_comprobante_fiscal = frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type)
-    
-    # Validar el código del tipo de comprobante fiscal
-    validate_tax_category_code(doc, tipo_comprobante_fiscal)
-    
-    # Validar la vigencia de los comprobantes fiscales
-    validate_fiscal_document_expiry(conf)
-    
-    if len(tipo_comprobante_fiscal.codigo) != 2:
-        frappe.throw("El código del tipo de comprobante fiscal debe tener exactamente 2 dígitos.")
-
-    current = cint(conf.secuencia_actual)
-
-    if cint(conf.secuencia_final) and current >= cint(conf.secuencia_final):
-        frappe.throw("Ha llegado al máximo establecido para esta serie de comprobantes!")
-
-    current += 1
-
-    conf.secuencia_actual = current
-    conf.db_update()
-
-    # Formato: Serie (parcial) + Código de tipo de comprobante (2 dígitos) + Secuencia (8 dígitos)
-    nuevo_ncf = '{0}{1}{2:08d}'.format(conf.serie.split(".")[0], tipo_comprobante_fiscal.codigo, current)
-
-    # Validar que el nuevo NCF no se haya usado con anterioridad
-    validate_unique_ncf(nuevo_ncf)
-
-    return nuevo_ncf
-
-def get_serie_for_(doc):
-    if not doc.tax_category:
-        frappe.throw("Favor seleccionar alguna categoria de impuestos")
-    
-    return frappe.get_doc("Comprobantes Fiscales NCF", {
-        "company": doc.company,
-        "tax_category": doc.tax_category
-    })
 
 def fetch_print_heading_if_missing(doc, go_silently=False):
     if doc.select_print_heading:
@@ -135,44 +94,34 @@ def validate_customer_tax_id(doc):
         if not ct.tax_id:
             frappe.throw('Para realizar ventas por un monto igual o mayor a los RD$250,000. El cliente debe de tener un RNC o Cédula asociado.')
 
-def validate_tax_category(doc):
-    conf = get_serie_for_(doc)
-    tipo_comprobante_fiscal = frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type)
-    validate_tax_category_code(doc, tipo_comprobante_fiscal)
+# def validate_tax_category(doc):
+#     conf = get_serie_for_(doc)
+#     tipo_comprobante_fiscal = frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type)
+#     validate_tax_category_code(doc, tipo_comprobante_fiscal)
 
 
-def validate_tax_category_code(doc, tipo_comprobante_fiscal): 
-    if doc.is_return:
-        if tipo_comprobante_fiscal.codigo not in ['04']:
-            frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para notas de crédito.")
-            raise frappe.ValidationError("Categoría de impuestos incorrecta para notas de crédito.")
-    elif doc.custom_is_b14:
-        if tipo_comprobante_fiscal.codigo not in ['14']:
-            frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante para Regímenes Especiales (B14).")
-            raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante para Regímenes Especiales (B14).")
-    elif doc.custom_is_b15:
-        if tipo_comprobante_fiscal.codigo not in ['15']:
-            frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante Gubernamental (B15).")
-            raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante Gubernamental (B15).")
-    elif doc.custom_is_b16:
-        if tipo_comprobante_fiscal.codigo not in ['16']:
-            frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante para Exportaciones (B16).")
-            raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante para Comprobante para Exportaciones (B16).")
-    else:
-        if tipo_comprobante_fiscal.codigo not in ['01']:
-            frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para facturas de crédito fiscal.")
-            raise frappe.ValidationError("Categoría de impuestos incorrecta para facturas de crédito fiscal.")
+# def validate_tax_category_code(doc, tipo_comprobante_fiscal): 
+#     if doc.is_return:
+#         if tipo_comprobante_fiscal.codigo not in ['04']:
+#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para notas de crédito.")
+#             raise frappe.ValidationError("Categoría de impuestos incorrecta para notas de crédito.")
+#     elif doc.custom_is_b14:
+#         if tipo_comprobante_fiscal.codigo not in ['14']:
+#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante para Regímenes Especiales (B14).")
+#             raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante para Regímenes Especiales (B14).")
+#     elif doc.custom_is_b15:
+#         if tipo_comprobante_fiscal.codigo not in ['15']:
+#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante Gubernamental (B15).")
+#             raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante Gubernamental (B15).")
+#     elif doc.custom_is_b16:
+#         if tipo_comprobante_fiscal.codigo not in ['16']:
+#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante para Exportaciones (B16).")
+#             raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante para Comprobante para Exportaciones (B16).")
+#     else:
+#         if tipo_comprobante_fiscal.codigo not in ['01']:
+#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para facturas de crédito fiscal.")
+#             raise frappe.ValidationError("Categoría de impuestos incorrecta para facturas de crédito fiscal.")
 
-def validate_fiscal_document_expiry(conf):
-    if conf.expira_el and getdate(nowdate()) > getdate(conf.expira_el):
-        frappe.msgprint("Los comprobantes fiscales seleccionados han expirado.")
-        raise frappe.ValidationError("Comprobantes fiscales expirados.")
-
-def validate_unique_ncf(nuevo_ncf):
-    existing_invoice = frappe.db.get_value("Sales Invoice", {"custom_ncf": nuevo_ncf}, "name")
-    if existing_invoice:
-        invoice_link = frappe.utils.get_url_to_form("Sales Invoice", existing_invoice)
-        frappe.throw(f"El NCF generado ({nuevo_ncf}) ya ha sido usado en otra factura de venta: <a href='{invoice_link}'>{existing_invoice}</a>")
 
 def should_assign_ncf(doc):
     return not doc.naming_series or doc.amended_from or (doc.is_pos and doc.custom_ncf) or (doc.custom_ncf and not doc.is_return)
@@ -192,3 +141,71 @@ def handle_credit_note_link(doc):
 
     print(f"handle_credit_note_link: doc.custom_return_against_ncf = {doc.custom_return_against_ncf}")
     print(f"handle_credit_note_link: doc.custom_ncf se ha dejado vacío = {doc.custom_ncf}")
+
+
+
+@frappe.whitelist()
+def generate_new(doc):
+    # Convertir el JSON recibido en un diccionario de Python
+    if isinstance(doc, str):
+        doc = json.loads(doc)
+
+    conf = get_serie_for_(doc)
+
+    if not conf or not conf.serie or not conf.document_type:
+        return {
+            'custom_ncf': ''
+        }
+
+    tipo_comprobante_fiscal = frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type)
+
+    validate_fiscal_document_expiry(conf)
+
+    if len(tipo_comprobante_fiscal.codigo) != 2:
+        frappe.throw("El código del tipo de comprobante fiscal debe tener exactamente 2 dígitos.")
+
+    current = cint(conf.secuencia_actual) + 1
+
+    if cint(conf.secuencia_final) and current >= cint(conf.secuencia_final):
+        frappe.throw("Ha llegado al máximo establecido para esta serie de comprobantes!")
+   
+    custom_ncf = '{0}{1}{2:08d}'.format(conf.serie.split(".")[0], tipo_comprobante_fiscal.codigo, current)
+
+    validate_unique_ncf(custom_ncf)
+
+    vencimiento_ncf = conf.expira_el
+
+    return {
+        'custom_ncf': custom_ncf
+    }
+
+def get_serie_for_(doc):
+    if isinstance(doc, str):
+        doc = json.loads(doc)
+
+    if doc.get('custom_tipo_comprobante') not in ["Factura de Crédito Fiscal","Factura de Consumo","Notas de Crédito","Comprobante para Regímenes Especiales","Comprobante Gubernamental","Comprobante para Exportaciones"]:
+        return None
+
+    if not doc.get('custom_tipo_comprobante'):
+        frappe.throw("Favor seleccionar un tipo de comprobante")
+
+    # Obtener el name del Tipo Comprobante Fiscal
+    tipo_comprobante = frappe.db.get_value("Tipo Comprobante Fiscal", {"tipo_comprobante": doc.get('custom_tipo_comprobante')}, "name")
+    if not tipo_comprobante:
+        frappe.throw(f"Tipo de comprobante fiscal '{doc.get('custom_tipo_comprobante')}' no encontrado")
+
+    return frappe.get_doc("Comprobantes Fiscales NCF", {
+        "company": doc.get('company'),
+        "document_type": tipo_comprobante
+    })
+
+def validate_fiscal_document_expiry(conf):
+    if conf.expira_el and getdate(nowdate()) > getdate(conf.expira_el):
+        frappe.msgprint("Los comprobantes fiscales seleccionados han expirado.")
+        raise frappe.ValidationError("Comprobantes fiscales expirados.")
+
+def validate_unique_ncf(nuevo_ncf):
+    existing_invoice = frappe.db.get_value("Sales Invoice", {"custom_ncf": nuevo_ncf}, "name")
+    if existing_invoice:
+        invoice_link = frappe.utils.get_url_to_form("Sales Invoice", existing_invoice)
+        frappe.throw(f"El NCF generado ({nuevo_ncf}) ya ha sido usado en otra factura de venta: <a href='{invoice_link}'>{existing_invoice}</a>")

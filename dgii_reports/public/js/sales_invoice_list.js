@@ -11,14 +11,14 @@ if (typeof frappe.views.ListView !== 'undefined' && typeof frappe.views.ListView
         // Iterar sobre los elementos de actions_menu_items
         actions_menu_items.forEach((item, index) => {
             // Identificar la acción de Cancelar
-            if (item.label === 'Cancelar') {
+            if (item.label === __("Cancel")) {
                 // Sobrescribir la acción de Cancelar
                 item.action = () => {
                     // Invocar la función submit_or_cancel con confirmación
                     const docnames = this.get_checked_items().map(doc => doc.name);
                     if (docnames.length > 0) {
                         frappe.confirm(
-                            __("Cancel {0} documents?", [docnames.length]),
+                            __("Cancel* {0} documents?", [docnames.length]),
                             () => {
                                 this.disable_list_update = true;
                                 dgii_reports.bulk_operations.submit_or_cancel.call(this, docnames, 'cancel', () => {

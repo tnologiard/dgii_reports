@@ -11,7 +11,7 @@ if (typeof frappe.views.ListView !== 'undefined' && typeof frappe.views.ListView
         // Iterar sobre los elementos de actions_menu_items
         actions_menu_items.forEach((item, index) => {
             // Identificar la acción de Cancelar
-            if (item.label === 'Cancelar') {
+            if (item.label === __("Cancel")) {
                 // Sobrescribir la acción de Cancelar
                 item.action = () => {
                     // Invocar la función submit_or_cancel con confirmación
