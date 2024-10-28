@@ -5,6 +5,7 @@ frappe.ui.form.on("Sales Invoice", {
             synchronize_is_return(frm);
             frm.trgger('is_return'); 
         }
+        set_custom_tipo_comprobante_options(frm);
 
     },
     is_return: function(frm) {
@@ -43,4 +44,20 @@ function synchronize_is_return(frm) {
             frm.refresh_field('custom_tipo_comprobante');
         });
     }
+}
+frappe.ui.form.on('Sales Invoice', {
+    onload: function(frm) {
+        set_custom_tipo_comprobante_options(frm);
+    }
+});
+
+function set_custom_tipo_comprobante_options(frm) {
+    frappe.call({
+        method: 'dgii_reports.hook.sales_invoice.get_custom_tipo_comprobante_options',
+        callback: function(r) {
+            if (r.message) {
+                frm.set_df_property('custom_tipo_comprobante', 'options', r.message);
+            }
+        }
+    });
 }

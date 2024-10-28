@@ -7,6 +7,9 @@ from frappe.model.document import Document
 
 from frappe import db as database
 from frappe.utils.background_jobs import enqueue_doc
+from frappe import _
+from frappe.exceptions import UniqueValidationError
+
 
 class ComprobantesFiscalesNCF(Document):
     def on_change(self):
@@ -18,6 +21,18 @@ class ComprobantesFiscalesNCF(Document):
         pass
         # self.method = "update_naming_series"
         # enqueue_doc(self.doctype, self.name, self.method, timeout=1000)
+    def validate(self):
+        self.check_unique_serie_for_company()
+
+    def check_unique_serie_for_company(self):
+        print("\n\\n\ncheck_unique_serie_for_company")
+        existing = frappe.db.exists({
+            'doctype': 'Comprobantes Fiscales NCF',
+            'company': self.company,
+            'serie': self.serie
+        })
+        if existing:
+            frappe.throw(_("Ya existe un comprobante fiscal con la misma serie y compañía."), UniqueValidationError)
 
     def update_naming_series(self):
         setter = frappe.new_doc("Property Setter")
@@ -59,6 +74,15 @@ class ComprobantesFiscalesNCF(Document):
             WHERE enabled = 1
             """)
 
+# def on_doctype_update():
+#     database.add_unique("Comprobantes Fiscales NCF", 
+#         ["company", "serie"], "unique_serie_for_company")
+
+
 def on_doctype_update():
-    database.add_unique("Comprobantes Fiscales NCF", 
-        ["company", "serie"], "unique_serie_for_company")
+    try:
+        database.add_unique("Comprobantes Fiscales NCF", 
+            ["company", "serie"], "unique_serie_for_company")
+    except Exception as e:
+        # Personalizar el mensaje de error
+        frappe.throw(_("Error al agregar la restricción única: {0}").format(str(e)))

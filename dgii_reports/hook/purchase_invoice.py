@@ -236,3 +236,24 @@ def validate_against_dgii(doc):
     if not validate_ncf_with_dgii(doc.tax_id, doc.bill_no, my_rnc=my_tax_id, sec_code=doc.custom_security_code, req_sec_code=doc.custom_require_security_code):
         print(f"doc.tax_id: {doc.tax_id}, doc.bill_no: {doc.bill_no}, my_rnc: {my_tax_id}, sec_code: {doc.custom_security_code}, req_sec_code: {doc.custom_require_security_code}")
         frappe.throw(_("Número de Comprobante Fiscal <b>NO VÁLIDO</b>."))
+
+
+@frappe.whitelist()
+def get_custom_tipo_comprobante_options():
+    tipos_comprobante = [
+        "Factura de Crédito Fiscal", "Notas de Crédito",
+        "Comprobante de Compras", "Comprobante para Gastos Menores"
+    ]
+    options = []
+
+    # Obtener todos los documentos del tipo 'Comprobantes Fiscales NCF'
+    comprobantes = frappe.get_all('Comprobantes Fiscales NCF', fields=['document_type'])
+
+    for comprobante in comprobantes:
+        # Obtener el valor del campo 'tipo_comprobante' del documento enlazado 'Tipo Comprobante Fiscal'
+        tipo_comprobante = frappe.get_value('Tipo Comprobante Fiscal', comprobante.document_type, 'tipo_comprobante')
+        if tipo_comprobante in tipos_comprobante:
+            options.append(tipo_comprobante)
+
+    # Devolver una lista de opciones únicas
+    return list(set(options))

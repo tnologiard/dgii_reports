@@ -22,6 +22,28 @@ class Reporte606(Document):
 
 @frappe.whitelist()
 def validate_pending_invoices(from_date, to_date):
+
+    # Recuperar los valores de los campos del Doctype DGII Reports Settings
+    settings = frappe.get_single("DGII Reports Settings")
+    required_fields = [
+        settings.itbis_facturado,
+        settings.ret606_itbis_retenido,
+        settings.isc,
+        settings.propina_legal,
+        settings.ret606_isr,
+        settings.otros_impuestos,
+        # settings.itbis_proporcionalidad,
+        # settings.itbis_costo,
+    ]
+
+    # Verificar que todos los campos tengan un valor
+    if not all(required_fields):
+        # frappe.log_error("DGII Reports Setting Missing Accounts", "validate_missing_accounts")
+        # return {"message": frappe._(""Todas las cuentas son requeridas excepto por ahora itbis_costo y itbis_proporcionalidad para el reporte 606 en el documento DGII Reports Settings. en el documento <a href='{0}'>DGII Reports Settings</a>").format(settings_url)} "}
+        settings_url = frappe.utils.get_url_to_form("DGII Reports Settings", "DGII Reports Settings") 
+        frappe.log_error("DGII Reports Setting Missing Accounts", "validate_missing_accounts")
+        return {"message": frappe._("Se deben configurar todas las cuentas excepto por ahora itbis_costo y itbis_proporcionalidad para el reporte 606 en el documento <a href='{0}'>DGII Reports Settings</a>").format(settings_url)}
+
     # Consulta para contar facturas en borrador
     draft_invoices = frappe.db.sql("""
         SELECT 

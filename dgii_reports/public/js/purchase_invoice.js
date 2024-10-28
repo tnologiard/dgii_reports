@@ -37,6 +37,8 @@ frappe.ui.form.on('Purchase Invoice', {
         }
         update_bill_no_label(frm);
 
+        set_custom_tipo_comprobante_options(frm);
+
     },
 
         // Se ejecuta cuando se valida el formulario antes de guardar
@@ -238,7 +240,6 @@ function validate_ncf(frm) {
             supplier: supplier
         },
         callback: function(r) {
-            alert(r.message);
             if (r.message) {
                 // Si el NCF es válido y cumple con las condiciones, hacer visible el campo custom_security_code
                 if (bill_no.startsWith('E') && bill_no.length === 13) {
@@ -309,4 +310,15 @@ function check_retention_type_visibility(frm) {
 
     frm.toggle_display('retention_type', show_retention_type);
     frm.toggle_reqd('retention_type', show_retention_type);
+}
+
+function set_custom_tipo_comprobante_options(frm) {
+    frappe.call({
+        method: 'dgii_reports.hook.purchase_invoice.get_custom_tipo_comprobante_options',
+        callback: function(r) {
+            if (r.message) {
+                frm.set_df_property('custom_tipo_comprobante', 'options', r.message);
+            }
+        }
+    });
 }

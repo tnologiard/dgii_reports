@@ -209,3 +209,30 @@ def validate_unique_ncf(nuevo_ncf):
     if existing_invoice:
         invoice_link = frappe.utils.get_url_to_form("Sales Invoice", existing_invoice)
         frappe.throw(f"El NCF generado ({nuevo_ncf}) ya ha sido usado en otra factura de venta: <a href='{invoice_link}'>{existing_invoice}</a>")
+
+
+
+import frappe
+
+import frappe
+
+@frappe.whitelist()
+def get_custom_tipo_comprobante_options():
+    tipos_comprobante = [
+        "Factura de Crédito Fiscal", "Factura de Consumo", "Notas de Crédito",
+        "Comprobante para Regímenes Especiales", "Comprobante Gubernamental",
+        "Comprobante para Exportaciones"
+    ]
+    options = []
+
+    # Obtener todos los documentos del tipo 'Comprobantes Fiscales NCF'
+    comprobantes = frappe.get_all('Comprobantes Fiscales NCF', fields=['document_type'])
+
+    for comprobante in comprobantes:
+        # Obtener el valor del campo 'tipo_comprobante' del documento enlazado 'Tipo Comprobante Fiscal'
+        tipo_comprobante = frappe.get_value('Tipo Comprobante Fiscal', comprobante.document_type, 'tipo_comprobante')
+        if tipo_comprobante in tipos_comprobante:
+            options.append(tipo_comprobante)
+
+    # Devolver una lista de opciones únicas
+    return list(set(options))
