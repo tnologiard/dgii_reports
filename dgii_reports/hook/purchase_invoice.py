@@ -241,10 +241,9 @@ def validate_against_dgii(doc):
 @frappe.whitelist()
 def get_custom_tipo_comprobante_options():
     tipos_comprobante = [
-        "Factura de Crédito Fiscal", "Notas de Crédito",
         "Comprobante de Compras", "Comprobante para Gastos Menores"
     ]
-    options = []
+    options = ["Factura de Crédito Fiscal", "Notas de Crédito"]
 
     # Obtener todos los documentos del tipo 'Comprobantes Fiscales NCF'
     comprobantes = frappe.get_all('Comprobantes Fiscales NCF', fields=['document_type'])

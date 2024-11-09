@@ -26,11 +26,19 @@ class ComprobantesFiscalesNCF(Document):
 
     def check_unique_serie_for_company(self):
         print("\n\\n\ncheck_unique_serie_for_company")
-        existing = frappe.db.exists({
-            'doctype': 'Comprobantes Fiscales NCF',
-            'company': self.company,
-            'serie': self.serie
-        })
+        if not self.is_new():
+            existing = frappe.db.exists({
+                'doctype': 'Comprobantes Fiscales NCF',
+                'company': self.company,
+                'serie': self.serie,
+                'name': ['!=', self.name]
+            })
+        else:
+            existing = frappe.db.exists({
+                'doctype': 'Comprobantes Fiscales NCF',
+                'company': self.company,
+                'serie': self.serie
+            })
         if existing:
             frappe.throw(_("Ya existe un comprobante fiscal con la misma serie y compañía."), UniqueValidationError)
 

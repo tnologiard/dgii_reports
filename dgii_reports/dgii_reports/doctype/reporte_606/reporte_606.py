@@ -96,12 +96,13 @@ def format_date_aaaammdd(date_value):
 
 def get_payment_methods(invoice_name):
     payment_entries = frappe.db.sql("""
-        SELECT DISTINCT pe.mode_of_payment
+        SELECT DISTINCT mop.custom_dgii_mode_of_payment
         FROM `tabPayment Entry Reference` per
         JOIN `tabPayment Entry` pe ON per.parent = pe.name
+        JOIN `tabMode of Payment` mop ON pe.mode_of_payment = mop.name
         WHERE per.reference_name = %s
     """, (invoice_name,), as_dict=True)
-    
+        
     # Debugging output
     print("\n\n\n")
     print("Invoice Name:", invoice_name)
@@ -385,10 +386,11 @@ def get_csv_file_address(from_date, to_date, decimal_places=2):
 
 def get_payment_method_id(invoice_name):
     payment_entries = frappe.db.sql("""
-        SELECT DISTINCT pe.mode_of_payment, pinv.outstanding_amount
+        SELECT DISTINCT mop.custom_dgii_mode_of_payment, pinv.outstanding_amount
         FROM `tabPayment Entry Reference` per
         JOIN `tabPayment Entry` pe ON per.parent = pe.name
         JOIN `tabPurchase Invoice` pinv ON per.reference_name = pinv.name
+        JOIN `tabMode of Payment` mop ON pe.mode_of_payment = mop.name
         WHERE per.reference_name = %s AND pe.docstatus != 2
     """, (invoice_name,), as_dict=True)
     
@@ -398,7 +400,7 @@ def get_payment_method_id(invoice_name):
     if len(payment_entries) > 1:
         return '07 - MIXTA'  # Mixta
     elif len(payment_entries) == 1:
-        forma_de_pago = payment_entries[0].mode_of_payment
+        forma_de_pago = payment_entries[0].custom_dgii_mode_of_payment
         return forma_de_pago
     return '04 - COMPRA A CREDITO'
 
