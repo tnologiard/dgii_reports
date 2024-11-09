@@ -1,6 +1,8 @@
 [
  {
   "codigo": "12",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:52:19.158923",
@@ -9,6 +11,8 @@
  },
  {
   "codigo": "17",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:54:03.226169",
@@ -17,6 +21,8 @@
  },
  {
   "codigo": "e-CF",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:54:25.849122",
@@ -25,6 +31,8 @@
  },
  {
   "codigo": "16",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:53:29.596689",
@@ -33,6 +41,8 @@
  },
  {
   "codigo": "03",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:51:22.429544",
@@ -41,6 +51,8 @@
  },
  {
   "codigo": "14",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:52:58.060257",
@@ -49,6 +61,8 @@
  },
  {
   "codigo": "15",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:53:12.998988",
@@ -57,6 +71,8 @@
  },
  {
   "codigo": "13",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:52:43.422619",
@@ -65,6 +81,8 @@
  },
  {
   "codigo": "11",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:52:02.310960",
@@ -72,15 +90,9 @@
   "tipo_comprobante": "Comprobante de Compras"
  },
  {
-  "codigo": "02",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:50:53.155431",
-  "name": "Factura de Consumo-02",
-  "tipo_comprobante": "Factura de Consumo"
- },
- {
   "codigo": "04",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
   "modified": "2024-08-07 03:51:40.420392",
@@ -89,10 +101,22 @@
  },
  {
   "codigo": "01",
+  "custom_visible_in_purchases": 1,
+  "custom_visible_in_sales": 1,
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:49:11.495377",
+  "modified": "2024-10-29 10:51:23.432942",
   "name": "Factura de Crédito Fiscal-01",
   "tipo_comprobante": "Factura de Crédito Fiscal"
+ },
+ {
+  "codigo": "02",
+  "custom_visible_in_purchases": 0,
+  "custom_visible_in_sales": 0,
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:50:53.155431",
+  "name": "Factura de Consumo-02",
+  "tipo_comprobante": "Factura de Consumo"
  }
 ]
