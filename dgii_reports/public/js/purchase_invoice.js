@@ -155,50 +155,9 @@ function synchronize_is_return(frm) {
 }
 
 
-$(document).off('blur', '[data-fieldname="bill_no_"]').on('blur', '[data-fieldname="bill_no"]', function() {
-
-    var frm = cur_frm;
-
-    // const bill_no = frm.doc.bill_no;
-    // const tipo_comprobante = frm.doc.custom_tipo_comprobante;
-
-    // if (!tipo_comprobante) {
-    //     frappe.msgprint(__('Seleccione un tipo de comprobante.'));
-    //     return;
-    // }
-    
-    // frm.set_value("bill_no", bill_no.trim().toUpperCase());
-
-    // // Validación previa
-    // if (bill_no.length === 11 && !bill_no.startsWith('B')) {
-    //     frappe.msgprint(__('El NCF de 11 caracteres debe iniciar con la letra B.'));
-    //     return;
-    // }
-    // if (bill_no.length === 13 && !bill_no.startsWith('E')) {
-    //     frappe.msgprint(__('El NCF de 13 caracteres debe iniciar con la letra E.'));
-    //     return;
-    // }
-
-    // // Validaciones adicionales basadas en custom_tipo_comprobante
-    // if (tipo_comprobante === 'Factura de Crédito Fiscal' && !bill_no.startsWith('B01')) {
-    //     frappe.msgprint(__('El NCF para Factura de Crédito Fiscal debe iniciar con B01.'));
-    //     return;
-    // }
-    // if (tipo_comprobante === 'Notas de Crédito' && !bill_no.startsWith('B04')) {
-    //     frappe.msgprint(__('El NCF para Notas de Crédito debe iniciar con B04.'));
-    //     return;
-    // }
-    // if (tipo_comprobante === 'Comprobante Fiscal Electrónico' && !bill_no.startsWith('E31')) {
-    //     frappe.msgprint(__('El NCF para Comprobante Fiscal Electrónico debe iniciar con E31.'));
-    //     return;
-    // }
-
-    // validate_ncf(frm);
-});
-
 function validate_ncf(frm) {
     const supplier = frm.doc.supplier;
-    const bill_no = frm.doc.bill_no;
+    const bill_no = frm.doc.bill_no.trim().toUpperCase();
     const tipo_comprobante = frm.doc.custom_tipo_comprobante;
 
     if (!tipo_comprobante) {
@@ -221,14 +180,17 @@ function validate_ncf(frm) {
     // Validaciones adicionales basadas en custom_tipo_comprobante
     if (tipo_comprobante === 'Factura de Crédito Fiscal' && !bill_no.startsWith('B01')) {
         frappe.msgprint(__('El NCF para Factura de Crédito Fiscal debe iniciar con B01.'));
+        frm.set_value('bill_no', '');
         return;
     }
     if (tipo_comprobante === 'Notas de Crédito' && !bill_no.startsWith('B04')) {
         frappe.msgprint(__('El NCF para Notas de Crédito debe iniciar con B04.'));
+        frm.set_value('bill_no', '');
         return;
     }
     if (tipo_comprobante === 'Comprobante Fiscal Electrónico' && !bill_no.startsWith('E31')) {
         frappe.msgprint(__('El NCF para Comprobante Fiscal Electrónico debe iniciar con E31.'));
+        frm.set_value('bill_no', '');
         return;
     }
 

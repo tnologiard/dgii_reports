@@ -28,7 +28,7 @@ def generate_new(doc):
     # Convertir el JSON recibido en un diccionario de Python
     if isinstance(doc, str):
         doc = json.loads(doc)
-
+        
     conf = get_serie_for_(doc)
 
     if not conf or not conf.serie or not conf.document_type:
@@ -40,12 +40,12 @@ def generate_new(doc):
     tipo_comprobante_fiscal = frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type)
     validate_fiscal_document_expiry(conf)
 
-    if len(tipo_comprobante_fiscal.codigo) != 2:
+    if  tipo_comprobante_fiscal.codigo != "e-CF" and len(tipo_comprobante_fiscal.codigo) != 2:
         frappe.throw("El código del tipo de comprobante fiscal debe tener exactamente 2 dígitos.")
 
     current = cint(conf.secuencia_actual) + 1
     bill_no = '{0}{1}{2:08d}'.format(conf.serie.split(".")[0], tipo_comprobante_fiscal.codigo, current)
-    validate_unique_ncf(bill_no)
+    validate_unique_ncf(bill_no, doc.get('supplier'))
 
     vencimiento_ncf = conf.expira_el
 
@@ -67,7 +67,7 @@ def get_serie_for_(doc):
     # Obtener el name del Tipo Comprobante Fiscal
     tipo_comprobante = frappe.db.get_value("Tipo Comprobante Fiscal", {"tipo_comprobante": doc.get('custom_tipo_comprobante')}, "name")
     if not tipo_comprobante:
-        frappe.throw(f"Tipo de comprobante fiscal '{doc.get('custom_tipo_comprobante')}' no encontrado")
+        frappe.throw(f"No ha configurado el tipo de comprobante fiscal '{doc.get('custom_tipo_comprobante')}'")
 
     return frappe.get_doc("Comprobantes Fiscales NCF", {
         "company": doc.get('company'),
@@ -79,16 +79,16 @@ def validate_fiscal_document_expiry(conf):
         frappe.msgprint("Los comprobantes fiscales seleccionados han expirado.")
         raise frappe.ValidationError("Comprobantes fiscales expirados.")
 
-
-def validate_unique_ncf(nuevo_ncf):
+# modificado para incluir al suplidor en la validación
+def validate_unique_ncf(nuevo_ncf, supplier):
     existing_invoice = frappe.db.get_value(
         "Purchase Invoice", 
-        {"bill_no": nuevo_ncf, "docstatus": ["!=", 0]},  # Excluir facturas en estado "Draft"
+        {"bill_no": nuevo_ncf, "docstatus": ["!=", 0], "supplier": supplier},  # Excluir facturas en estado "Draft"
         "name"
     )
     if existing_invoice:
         invoice_link = frappe.utils.get_url_to_form("Purchase Invoice", existing_invoice)
-        frappe.throw(f"El NCF generado ({nuevo_ncf}) ya ha sido usado en otra factura de venta: <a href='{invoice_link}'>{existing_invoice}</a>")
+        frappe.throw(f"El NCF generado ({nuevo_ncf}) ya ha sido usado en otra factura de compra paara este suplidor: <a href='{invoice_link}'>{existing_invoice}</a>")
     
 
 @frappe.whitelist()
@@ -98,7 +98,6 @@ def validate_ncf(ncf_number, supplier):
             "bill_no": ncf_number,
             "supplier": supplier
         })
-        # validate_unique_ncf(ncf_number)
         validate_unique_ncf_by_supplier(temp_doc)
         return ncf.is_valid(ncf_number)
     except Exception as e:
@@ -120,10 +119,12 @@ def validate(doc, event):
 def before_save(doc, event):
     """Función que se ejecuta antes de guardar el documento."""
     common_validations(doc)
+    validate_unique_ncf_by_supplier(doc)
 
 def before_submit(doc, event):
     """Función que se ejecuta antes de enviar el documento."""
     common_validations(doc)
+    validate_unique_ncf_by_supplier(doc)
     if doc.custom_tipo_comprobante in ["Comprobante de Compras", "Comprobante para Gastos Menores"]  and not doc.amended_from:
         conf = get_serie_for_(doc)
         current = cint(conf.secuencia_actual) + 1
