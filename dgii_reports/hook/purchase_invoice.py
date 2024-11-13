@@ -7,74 +7,6 @@ from stdnum.do import rnc
 from stdnum.do import ncf
 
 
-
-# def validate_tax_category(doc):
-#     if not doc.custom_is_b11 and not doc.custom_is_b13:
-#         return
-
-#     conf = get_serie_for_(doc)
-#     if conf:
-#         tipo_comprobante_fiscal = frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type)
-#         validate_tax_category_code(doc, tipo_comprobante_fiscal)
-
-# def validate_tax_category_code(doc, tipo_comprobante_fiscal):
-#     print(f"validate_tax_category_code: doc.custom_is_b11 = {doc.custom_is_b11}, doc.custom_is_b13 = {doc.custom_is_b13}")
-#     if doc.custom_is_b11:
-#         if tipo_comprobante_fiscal.codigo != '11':
-#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para facturas de Comprobante de Compras.")
-#             raise frappe.ValidationError("Categoría de impuestos incorrecta para facturas de Comprobante de Compras.")
-#     elif doc.custom_is_b13:
-#         if tipo_comprobante_fiscal.codigo != '13':
-#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para facturas de Comprobante para Gastos Menores.")
-#             raise frappe.ValidationError("Categoría de impuestos incorrecta para facturas de Comprobante para Gastos Menores.")
-#     validate_bill_no_and_custom_flags(doc)
-
-# def validate_bill_no_and_custom_flags(doc):
-#     if doc.bill_no:
-#         if doc.bill_no.startswith('B13') and not doc.custom_is_b13:
-#             frappe.msgprint("Parece que está intentando registrar un Comprobante para Gastos Menores (B13). Por favor, seleccione la casilla correspondiente.")
-#             raise frappe.ValidationError("Casilla 'Comprobante para Gastos Menores (B13)' no seleccionada.")
-#         elif doc.bill_no.startswith('B14') and not doc.custom_is_b11:
-#             frappe.msgprint("Parece que está intentando registrar un Comprobante de Compras (B14). Por favor, seleccione la casilla correspondiente.")
-#             raise frappe.ValidationError("Casilla 'Comprobante de Compras (B14)' no seleccionada.")
-
-
-# def validate_duplicate_ncf(doc):
-#     """Valida si el NCF ya existe para el suplidor en una factura activa."""
-#     if not doc.bill_no:
-#         return 
-
-#     # Verificar si es una nota de débito y que el NCF del suplidor tenga el prefijo B04
-#     if doc.is_return and not doc.bill_no.startswith("B04"):
-#         frappe.throw("El NCF de una nota de crédito del suplidor debe tener el prefijo 'B04'.")
-
-#     if doc.custom_is_b11 and not doc.bill_no.startswith("B11"):
-#         frappe.throw("El NCF de un Comprobante de Compras, debe tener el prefijo 'B11'.")
-
-#     if doc.custom_is_b13 and not doc.bill_no.startswith("B13"):
-#         frappe.throw("El NCF de un Comprobante para Gastos Menores, debe tener el prefijo 'B13'.")
-
-#     filters = {
-#         "tax_id": doc.tax_id, # rnc
-#         "bill_no": doc.bill_no, # ncf
-#         "docstatus": 1,
-#         "name": ["!=", doc.name],
-#     }
-#     if frappe.db.exists("Purchase Invoice", filters):
-#         frappe.throw(f"Ya existe una factura registrada a nombre de <b>{doc.supplier_name}</b> con el mismo NCF <b>{doc.bill_no}</b>, ¡favor verificar!")
-
-
-# def validate_tax_id(doc):
-#     """Valida que el campo tax_id no sea vacío."""
-#     if not doc.tax_id:
-#         if doc.custom_is_b13:
-#             # Obtener el tax_id de la compañía y asignarlo al documento
-#             my_tax_id = frappe.get_value("Company", doc.company, "tax_id")
-#             doc.tax_id = my_tax_id
-#         else:
-#             # Detener el flujo y lanzar una excepción
-#             frappe.throw("El campo RNC / Cédula del proveedor es obligatorio. Favor proporcionar el RNC / Cédula del proveedor.")
-
 def validate_unique_ncf_by_supplier(doc):
     """Valida que el NCF sea único por suplidor."""
     if not doc.bill_no:
@@ -154,9 +86,6 @@ def validate_unique_ncf(nuevo_ncf):
         {"bill_no": nuevo_ncf, "docstatus": ["!=", 0]},  # Excluir facturas en estado "Draft"
         "name"
     )
-    print("\n\n")
-    print(f"existing_invoice: {existing_invoice}")
-    print("\n\n")
     if existing_invoice:
         invoice_link = frappe.utils.get_url_to_form("Purchase Invoice", existing_invoice)
         frappe.throw(f"El NCF generado ({nuevo_ncf}) ya ha sido usado en otra factura de venta: <a href='{invoice_link}'>{existing_invoice}</a>")
@@ -182,7 +111,6 @@ def common_validations(doc):
         frappe.throw("Favor seleccionar un tipo de comprobante")
     if not doc.supplier:
         frappe.throw("Favor seleccionar un suplidor")
-    validate_unique_ncf(doc.bill_no)
 
 
 def validate(doc, event):
@@ -240,19 +168,20 @@ def validate_against_dgii(doc):
 
 @frappe.whitelist()
 def get_custom_tipo_comprobante_options():
-    tipos_comprobante = [
-        "Comprobante de Compras", "Comprobante para Gastos Menores"
-    ]
-    options = ["Factura de Crédito Fiscal", "Notas de Crédito"]
+    options = []
 
-    # Obtener todos los documentos del tipo 'Comprobantes Fiscales NCF'
-    comprobantes = frappe.get_all('Comprobantes Fiscales NCF', fields=['document_type'])
+    # Obtener el doctype single del tipo 'DGII Reports Settings'
+    dgii_reports_settings = frappe.get_single('DGII Reports Settings')
 
-    for comprobante in comprobantes:
-        # Obtener el valor del campo 'tipo_comprobante' del documento enlazado 'Tipo Comprobante Fiscal'
-        tipo_comprobante = frappe.get_value('Tipo Comprobante Fiscal', comprobante.document_type, 'tipo_comprobante')
-        if tipo_comprobante in tipos_comprobante:
+    # Obtener los valores del campo 'purchase_ncf_list_settings'
+    purchase_ncf_list_settings = dgii_reports_settings.get('purchase_ncf_list_settings')
+
+    for setting in purchase_ncf_list_settings:
+        # Obtener el valor del campo 'tipo_comprobante' del documento enlazado 'Comprobantes Fiscales Settings'
+        tipo_comprobante = frappe.get_value('Tipo Comprobante Fiscal', setting.tipo_comprobante_fiscal, 'tipo_comprobante')
+        # Verificar si el campo 'visible_en_factura' es verdadero
+        if setting.visible_en_factura:
             options.append(tipo_comprobante)
 
-    # Devolver una lista de opciones únicas
-    return list(set(options))
+    # Devolver una lista de opciones únicas manteniendo el orden de la tabla
+    return list(dict.fromkeys(options))

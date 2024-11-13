@@ -94,35 +94,6 @@ def validate_customer_tax_id(doc):
         if not ct.tax_id:
             frappe.throw('Para realizar ventas por un monto igual o mayor a los RD$250,000. El cliente debe de tener un RNC o Cédula asociado.')
 
-# def validate_tax_category(doc):
-#     conf = get_serie_for_(doc)
-#     tipo_comprobante_fiscal = frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type)
-#     validate_tax_category_code(doc, tipo_comprobante_fiscal)
-
-
-# def validate_tax_category_code(doc, tipo_comprobante_fiscal): 
-#     if doc.is_return:
-#         if tipo_comprobante_fiscal.codigo not in ['04']:
-#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para notas de crédito.")
-#             raise frappe.ValidationError("Categoría de impuestos incorrecta para notas de crédito.")
-#     elif doc.custom_is_b14:
-#         if tipo_comprobante_fiscal.codigo not in ['14']:
-#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante para Regímenes Especiales (B14).")
-#             raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante para Regímenes Especiales (B14).")
-#     elif doc.custom_is_b15:
-#         if tipo_comprobante_fiscal.codigo not in ['15']:
-#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante Gubernamental (B15).")
-#             raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante Gubernamental (B15).")
-#     elif doc.custom_is_b16:
-#         if tipo_comprobante_fiscal.codigo not in ['16']:
-#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para Comprobante para Exportaciones (B16).")
-#             raise frappe.ValidationError("Categoría de impuestos incorrecta para Comprobante para Comprobante para Exportaciones (B16).")
-#     else:
-#         if tipo_comprobante_fiscal.codigo not in ['01']:
-#             frappe.msgprint("Por favor, seleccione una categoría de impuestos adecuada para facturas de crédito fiscal.")
-#             raise frappe.ValidationError("Categoría de impuestos incorrecta para facturas de crédito fiscal.")
-
-
 def should_assign_ncf(doc):
     return not doc.naming_series or doc.amended_from or (doc.is_pos and doc.custom_ncf) or (doc.custom_ncf and not doc.is_return)
 
@@ -212,27 +183,49 @@ def validate_unique_ncf(nuevo_ncf):
 
 
 
-import frappe
+# import frappe
 
-import frappe
+# import frappe
+
+# @frappe.whitelist()
+# def get_custom_tipo_comprobante_options():
+#     tipos_comprobante = [
+#         "Factura de Crédito Fiscal", "Factura de Consumo", "Notas de Crédito",
+#         "Comprobante para Regímenes Especiales", "Comprobante Gubernamental",
+#         "Comprobante para Exportaciones"
+#     ]
+#     options = []
+
+#     # Obtener todos los documentos del tipo 'Comprobantes Fiscales NCF'
+#     comprobantes = frappe.get_all('Comprobantes Fiscales NCF', fields=['document_type'])
+
+#     for comprobante in comprobantes:
+#         # Obtener el valor del campo 'tipo_comprobante' del documento enlazado 'Tipo Comprobante Fiscal'
+#         tipo_comprobante = frappe.get_value('Tipo Comprobante Fiscal', comprobante.document_type, 'tipo_comprobante')
+#         if tipo_comprobante in tipos_comprobante:
+#             options.append(tipo_comprobante)
+
+#     # Devolver una lista de opciones únicas
+#     return list(set(options))
+
+
 
 @frappe.whitelist()
 def get_custom_tipo_comprobante_options():
-    tipos_comprobante = [
-        "Factura de Crédito Fiscal", "Factura de Consumo", "Notas de Crédito",
-        "Comprobante para Regímenes Especiales", "Comprobante Gubernamental",
-        "Comprobante para Exportaciones"
-    ]
     options = []
 
-    # Obtener todos los documentos del tipo 'Comprobantes Fiscales NCF'
-    comprobantes = frappe.get_all('Comprobantes Fiscales NCF', fields=['document_type'])
+    # Obtener el doctype single del tipo 'DGII Reports Settings'
+    dgii_reports_settings = frappe.get_single('DGII Reports Settings')
 
-    for comprobante in comprobantes:
-        # Obtener el valor del campo 'tipo_comprobante' del documento enlazado 'Tipo Comprobante Fiscal'
-        tipo_comprobante = frappe.get_value('Tipo Comprobante Fiscal', comprobante.document_type, 'tipo_comprobante')
-        if tipo_comprobante in tipos_comprobante:
+    # Obtener los valores del campo 'sales_ncf_list_settings'
+    sales_ncf_list_settings = dgii_reports_settings.get('sales_ncf_list_settings')
+
+    for setting in sales_ncf_list_settings:
+        # Obtener el valor del campo 'tipo_comprobante' del documento enlazado 'Comprobantes Fiscales Settings'
+        tipo_comprobante = frappe.get_value('Tipo Comprobante Fiscal', setting.tipo_comprobante_fiscal, 'tipo_comprobante')
+        # Verificar si el campo 'visible_en_factura' es verdadero
+        if setting.visible_en_factura:
             options.append(tipo_comprobante)
 
-    # Devolver una lista de opciones únicas
-    return list(set(options))
+    # Devolver una lista de opciones únicas manteniendo el orden de la tabla
+    return list(dict.fromkeys(options))

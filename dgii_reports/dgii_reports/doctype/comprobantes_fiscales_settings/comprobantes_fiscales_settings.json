@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-11-12 17:04:16.452741",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "tipo_comprobante_fiscal",
+  "code",
+  "visible_en_factura"
+ ],
+ "fields": [
+  {
+   "columns": 6,
+   "fieldname": "tipo_comprobante_fiscal",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Tipo Comprobante Fiscal",
+   "options": "Tipo Comprobante Fiscal"
+  },
+  {
+   "columns": 2,
+   "default": "0",
+   "fieldname": "visible_en_factura",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Visible en factura"
+  },
+  {
+   "columns": 2,
+   "fetch_from": "tipo_comprobante_fiscal.codigo",
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "C\u00f3digo"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-11-13 14:56:50.290675",
+ "modified_by": "Administrator",
+ "module": "Dgii Reports",
+ "name": "Comprobantes Fiscales Settings",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -20,24 +20,24 @@ class Reporte607(Document):
 @frappe.whitelist()
 def validate_pending_invoices(from_date, to_date):
 
-    # Recuperar los valores de los campos del Doctype DGII Reports Settings
-    settings = frappe.get_single("DGII Reports Settings")
-    required_fields = [
-    settings.itbis_facturado_607,
-    settings.itbis_percibido_607,
-    settings.isr_percibido_607,
-    settings.isc_607,
-    settings.propina_legal_607,
-    settings.ret_607_itbis_retenido_por_terceros,
-    settings.ret_607_retencion_renta_por_terceros,
-    settings.otros_impuestos_tasas_607
-    ]
+    # # Recuperar los valores de los campos del Doctype DGII Reports Settings
+    # settings = frappe.get_single("DGII Reports Settings")
+    # required_fields = [
+    # settings.itbis_facturado_607,
+    # settings.itbis_percibido_607,
+    # settings.isr_percibido_607,
+    # settings.isc_607,
+    # settings.propina_legal_607,
+    # settings.ret_607_itbis_retenido_por_terceros,
+    # settings.ret_607_retencion_renta_por_terceros,
+    # settings.otros_impuestos_tasas_607
+    # ]
 
-    # Verificar que todos los campos tengan un valor
-    if not all(required_fields): 
-        settings_url = frappe.utils.get_url_to_form("DGII Reports Settings", "DGII Reports Settings") + "#dgii-reports-settings-cuentas_607_tab"
-        frappe.log_error("DGII Reports Setting Missing Accounts", "validate_missing_accounts")
-        return {"message": frappe._("Se deben configurar las cuentas para el reporte 607 en el documento <a href='{0}'>DGII Reports Settings</a>").format(settings_url)}
+    # # Verificar que todos los campos tengan un valor
+    # if not all(required_fields): 
+    #     settings_url = frappe.utils.get_url_to_form("DGII Reports Settings", "DGII Reports Settings") + "#dgii-reports-settings-cuentas_607_tab"
+    #     frappe.log_error("DGII Reports Setting Missing Accounts", "validate_missing_accounts")
+    #     return {"message": frappe._("Se deben configurar las cuentas para el reporte 607 en el documento <a href='{0}'>DGII Reports Settings</a>").format(settings_url)}
 
 
     draft_invoices = frappe.db.sql("""
