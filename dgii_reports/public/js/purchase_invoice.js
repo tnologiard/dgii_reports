@@ -229,14 +229,20 @@ function update_bill_no_label(frm) {
     if (tipo_comprobante === "Comprobante de Compras" || tipo_comprobante === "Comprobante para Gastos Menores") {
         frm.set_df_property('bill_no', 'label', 'NCF');
         frm.set_df_property('bill_date', 'label', 'Fecha de Comprobante');
-        frm.set_value('bill_date', frm.doc.posting_date); 
+        if(frm.is_new())
+            {
+                frm.set_value('bill_date', frm.doc.posting_date); 
+            }
         frm.set_df_property('vencimiento_ncf', 'reqd', 0);
         frm.set_df_property('bill_no', 'read_only', 1); 
         frm.set_df_property('vencimiento_ncf', 'read_only', 1); 
     } else {
         frm.set_df_property('bill_no', 'label', 'NCF Suplidor');
         frm.set_df_property('bill_date', 'label', 'Fecha de Factura del Suplidor');
-        frm.set_value('bill_date', ''); 
+        if(frm.is_new())
+            {
+                frm.set_value('bill_date', ''); 
+            }
         frm.set_df_property('vencimiento_ncf', 'reqd', 1); 
         frm.set_df_property('bill_no', 'read_only', 0); 
         frm.set_df_property('vencimiento_ncf', 'read_only', 0); 

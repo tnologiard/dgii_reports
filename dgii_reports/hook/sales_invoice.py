@@ -89,7 +89,7 @@ def fetch_print_heading_if_missing(doc, go_silently=False):
     doc.db_update()
 
 def validate_customer_tax_id(doc):
-    if doc.base_total >= MAX_VALUE_AVALIABLE:
+    if doc.base_net_total >= MAX_VALUE_AVALIABLE:
         ct = frappe.get_doc('Customer', doc.customer)
         if not ct.tax_id:
             frappe.throw('Para realizar ventas por un monto igual o mayor a los RD$250,000. El cliente debe de tener un RNC o Cédula asociado.')

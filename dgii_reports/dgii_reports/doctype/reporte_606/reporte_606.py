@@ -405,40 +405,6 @@ def get_payment_method_id(invoice_name):
     return '04 - COMPRA A CREDITO'
 
 
-# @frappe.whitelist()
-# def get_excel_file_address(from_date, to_date, decimal_places=2):
-#     # Obtener el tax_id del doctype Company
-#     company = frappe.get_doc("Company", frappe.defaults.get_user_default("Company"))
-#     rnc = company.tax_id.replace("-", "") if company.tax_id else ""
-
-#     # Calcular el periodo
-#     from_date_obj = datetime.strptime(from_date, "%Y-%m-%d")
-#     to_date_obj = datetime.strptime(to_date, "%Y-%m-%d")
-#     periodo = f"{from_date_obj.year}{min(from_date_obj.month, to_date_obj.month):02d}"
-
-#     # Recuperar los valores de los campos del Doctype DGII Reports Settings
-#     settings = frappe.get_single("DGII Reports Settings")
-#     itbis_facturado = frappe.db.escape(settings.itbis_facturado or '')
-#     itbis_retenido = frappe.db.escape(settings.ret606_itbis_retenido or '')
-#     itbis_proporcionalidad = frappe.db.escape(settings.itbis_proporcionalidad or '')
-#     itbis_costo = frappe.db.escape(settings.itbis_costo or '')
-#     isc = frappe.db.escape(settings.isc or '')
-#     propina_legal = frappe.db.escape(settings.propina_legal or '')
-#     isr = frappe.db.escape(settings.ret606_isr or '')
-
-#     # Obtener las cuentas de la tabla otros_impuestos
-#     otros_impuestos_cuentas = [frappe.db.escape(item.cuenta) for item in settings.otros_impuestos]
-
-#     # Construir la condición SQL para otros_impuestos
-#     if otros_impuestos_cuentas:
-#         otros_impuestos_condition = " OR ".join([f"ptc.account_head = {cuenta}" for cuenta in otros_impuestos_cuentas])
-#         otros_impuestos_sql = f"SUM(CASE WHEN {otros_impuestos_condition} THEN ptc.tax_amount ELSE 0 END) AS `Otros Impuesto/Tasas`"
-#     else:
-#         otros_impuestos_sql = "0 AS `Otros Impuesto/Tasas`"
-
-import frappe
-from datetime import datetime
-
 @frappe.whitelist()
 def get_excel_file_address(from_date, to_date, decimal_places=2):
     # Obtener el tax_id del doctype Company
