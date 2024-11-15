@@ -27,6 +27,7 @@ frappe.ui.form.on("Sales Invoice", {
                     if (r.message) {
                         // Establecer los valores obtenidos en los campos custom_ncf 
                         frm.set_value('custom_ncf', r.message.custom_ncf);
+                        frm.set_value('custom_ncf_valido_hasta', r.message.vencimiento_ncf);
                     }
                 }
             });

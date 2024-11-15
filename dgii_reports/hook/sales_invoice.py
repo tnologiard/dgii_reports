@@ -147,7 +147,8 @@ def generate_new(doc):
     vencimiento_ncf = conf.expira_el
 
     return {
-        'custom_ncf': custom_ncf
+        'custom_ncf': custom_ncf,
+        'vencimiento_ncf': vencimiento_ncf
     }
 
 def get_serie_for_(doc):

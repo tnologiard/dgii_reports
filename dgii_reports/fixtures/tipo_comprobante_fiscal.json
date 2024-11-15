@@ -32,14 +32,6 @@
   "tipo_comprobante": "Comprobante para Exportaciones"
  },
  {
-  "codigo": "03",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:51:22.429544",
-  "name": "Notas de Débito-03",
-  "tipo_comprobante": "Notas de Débito"
- },
- {
   "codigo": "14",
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
@@ -86,6 +78,14 @@
   "modified": "2024-11-12 06:06:35.927731",
   "name": "Factura de Crédito Fiscal-01",
   "tipo_comprobante": "Factura de Crédito Fiscal"
+ },
+ {
+  "codigo": "03",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:51:22.429544",
+  "name": "Notas de Débito-03",
+  "tipo_comprobante": "Notas de Débito"
  },
  {
   "codigo": "02",
