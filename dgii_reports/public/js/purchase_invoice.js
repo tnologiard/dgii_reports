@@ -111,6 +111,11 @@ frappe.ui.form.on('Purchase Invoice', {
                         frm.set_value('bill_no', r.message.bill_no);
                         frm.set_value('vencimiento_ncf', r.message.vencimiento_ncf);
                     }
+                },
+                error: function(r) {
+                    // Limpiar los campos custom_ncf si hubo un error
+                    frm.set_value('bill_no', '');
+                    frm.set_value('vencimiento_ncf', '');
                 }
             });
         }

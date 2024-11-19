@@ -125,7 +125,8 @@ def generate_new(doc):
 
     if not conf or not conf.serie or not conf.document_type:
         return {
-            'custom_ncf': ''
+            'custom_ncf': '',
+            'vencimiento_ncf': ''
         }
 
     tipo_comprobante_fiscal = frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type)
@@ -162,14 +163,24 @@ def get_serie_for_(doc):
         frappe.throw("Favor seleccionar un tipo de comprobante")
 
     # Obtener el name del Tipo Comprobante Fiscal
-    tipo_comprobante = frappe.db.get_value("Tipo Comprobante Fiscal", {"tipo_comprobante": doc.get('custom_tipo_comprobante')}, "name")
-    if not tipo_comprobante:
-        frappe.throw(f"Tipo de comprobante fiscal '{doc.get('custom_tipo_comprobante')}' no encontrado")
+    try:
+        tipo_comprobante = frappe.db.get_value("Tipo Comprobante Fiscal", {"tipo_comprobante": doc.get('custom_tipo_comprobante')}, "name")
+    except Exception as e:
+        tipo_comprobante = None
+        frappe.throw(f"Error al obtener el tipo de comprobante fiscal: {str(e)}")
 
-    return frappe.get_doc("Comprobantes Fiscales NCF", {
-        "company": doc.get('company'),
-        "document_type": tipo_comprobante
-    })
+    if not tipo_comprobante:
+        frappe.throw(f"No ha configurado el tipo de comprobante fiscal '{doc.get('custom_tipo_comprobante')}'")
+
+    try:
+        conf = frappe.get_doc("Comprobantes Fiscales NCF", {
+            "company": doc.get('company'),
+            "document_type": tipo_comprobante
+        })
+    except frappe.DoesNotExistError:
+        frappe.throw(f"No ha configurado los Comprobantes Fiscales NCF para la compañía '{doc.get('company')}' del tipo '{tipo_comprobante}'")
+    
+    return conf
 
 def validate_fiscal_document_expiry(conf):
     if conf.expira_el and getdate(nowdate()) > getdate(conf.expira_el):
@@ -181,9 +192,6 @@ def validate_unique_ncf(nuevo_ncf):
     if existing_invoice:
         invoice_link = frappe.utils.get_url_to_form("Sales Invoice", existing_invoice)
         frappe.throw(f"El NCF generado ({nuevo_ncf}) ya ha sido usado en otra factura de venta: <a href='{invoice_link}'>{existing_invoice}</a>")
-
-
-
 
 
 @frappe.whitelist()

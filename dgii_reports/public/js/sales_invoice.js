@@ -29,8 +29,19 @@ frappe.ui.form.on("Sales Invoice", {
                         frm.set_value('custom_ncf', r.message.custom_ncf);
                         frm.set_value('custom_ncf_valido_hasta', r.message.vencimiento_ncf);
                     }
+                },
+                error: function(r) {
+                    // Limpiar los campos custom_ncf si hubo un error
+                    frm.set_value('custom_ncf', '');
+                    frm.set_value('custom_ncf_valido_hasta', '');
                 }
             });
+        }
+        // Sincronizar con el campo is_return
+        if (frm.doc.custom_tipo_comprobante === "Notas de Crédito") {
+            frm.set_value('is_return', 1);
+        } else if (frm.doc.custom_tipo_comprobante !== "") {
+            frm.set_value('is_return', 0);
         }
     }
 });

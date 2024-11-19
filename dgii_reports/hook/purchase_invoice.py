@@ -65,14 +65,24 @@ def get_serie_for_(doc):
         frappe.throw("Favor seleccionar un tipo de comprobante")
 
     # Obtener el name del Tipo Comprobante Fiscal
-    tipo_comprobante = frappe.db.get_value("Tipo Comprobante Fiscal", {"tipo_comprobante": doc.get('custom_tipo_comprobante')}, "name")
+    try:
+        tipo_comprobante = frappe.db.get_value("Tipo Comprobante Fiscal", {"tipo_comprobante": doc.get('custom_tipo_comprobante')}, "name")
+    except Exception as e:
+        tipo_comprobante = None
+        frappe.throw(f"Error al obtener el tipo de comprobante fiscal: {str(e)}")
+    
     if not tipo_comprobante:
         frappe.throw(f"No ha configurado el tipo de comprobante fiscal '{doc.get('custom_tipo_comprobante')}'")
 
-    return frappe.get_doc("Comprobantes Fiscales NCF", {
-        "company": doc.get('company'),
-        "document_type": tipo_comprobante
-    })
+    try:
+        conf = frappe.get_doc("Comprobantes Fiscales NCF", {
+            "company": doc.get('company'),
+            "document_type": tipo_comprobante
+        })
+    except frappe.DoesNotExistError:
+        frappe.throw(f"No ha configurado los Comprobantes Fiscales NCF para la compañía '{doc.get('company')}' del tipo '{tipo_comprobante}'")
+    
+    return conf
 
 def validate_fiscal_document_expiry(conf):
     if conf.expira_el and getdate(nowdate()) > getdate(conf.expira_el):
