@@ -164,7 +164,7 @@ def get_file_address(from_date, to_date, decimal_places=2):
     output = BytesIO()
     wb = Workbook()
     ws = wb.active
-    ws.title = "Reporte 608S"
+    ws.title = "Reporte 608"
 
     # Estilos
     header_fill = PatternFill(start_color="008000", end_color="008000", fill_type="solid")  # Verde oscuro

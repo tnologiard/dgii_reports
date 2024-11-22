@@ -40,10 +40,10 @@ frappe.ui.form.on('Purchase Invoice', {
         set_custom_tipo_comprobante_options(frm);
 
     },
-
-        // Se ejecuta cuando se valida el formulario antes de guardar
+    // Se ejecuta cuando se valida el formulario antes de guardar
     validate(frm) {
-        if (!frm.doc.tax_id) {
+        console.log("iniciando la validación frm.doc.tax_id", frm.doc.tax_id);
+        if (!frm.doc.custom_rnc) {
             const tipo_comprobante = frm.get_field('custom_tipo_comprobante').get_value();
             if (tipo_comprobante === "Comprobante para Gastos Menores") {
                 // Obtener el tax_id de la compañía y asignarlo al documento
@@ -53,28 +53,72 @@ frappe.ui.form.on('Purchase Invoice', {
                     }
                 });
             } else {
-                // Solicitar el RNC / Cédula del proveedor
-                frappe.prompt(
-                    [
-                        {
-                            'fieldname': 'tax_id',
-                            'fieldtype': 'Data',
-                            'label': 'RNC / Cédula del proveedor',
-                            'reqd': 1
-                        }
-                    ],
-                    function(values){
-                        // Actualizar el proveedor y el campo tax_id del documento
-                        frappe.db.set_value("Supplier", frm.doc.supplier, "tax_id", values.tax_id);
-                        frm.set_value("tax_id", values.tax_id);
+                // Validación adicional para proveedores en DGII Reports Settings
+                frappe.call({
+                    method: 'frappe.client.get',
+                    args: {
+                        doctype: 'DGII Reports Settings',
+                        name: 'DGII Reports Settings'
                     },
-                    'Favor proporcionar el RNC / Cédula del proveedor',
-                    'Actualizar'
-                );
-                frappe.validated = false; // Detener el flujo hasta que se proporcione el tax_id
+                    callback: function(r) {
+                        if (r.message) {
+                            const pretty_cash_suppliers = r.message.pretty_cash || [];
+                            const supplier_names = pretty_cash_suppliers.map(supplier => supplier.supplier);
+    
+                            // Comparar el proveedor seleccionado con los proveedores en pretty_cash y verificar si tax_id está vacío
+                            if (!supplier_names.includes(frm.doc.supplier)) {
+                                // Solicitar el RNC / Cédula del proveedor y actualizar el proveedor
+                                frappe.prompt(
+                                    [
+                                        {
+                                            'fieldname': 'tax_id',
+                                            'fieldtype': 'Data',
+                                            'label': 'RNC / Cédula del proveedor 1',
+                                            'reqd': 1
+                                        }
+                                    ],
+                                    function(values){
+                                        // Actualizar el proveedor y el campo tax_id del documento
+                                        frappe.db.set_value("Supplier", frm.doc.supplier, "tax_id", values.tax_id);
+                                        frm.set_value("tax_id", values.tax_id);
+                                        frappe.validated = true; // Continuar con la validación
+                                    },
+                                    'Favor proporcionar el RNC / Cédula del proveedor',
+                                    'Actualizar'
+                                );
+                                frappe.validated = false; // Detener el flujo hasta que se proporcione el tax_id
+                            } else {
+                                // Solicitar el RNC / Cédula del proveedor 
+                                frappe.prompt(
+                                    [
+                                        {
+                                            'fieldname': 'tax_id',
+                                            'fieldtype': 'Data',
+                                            'label': 'RNC / Cédula del proveedor 2',
+                                            'reqd': 1
+                                        }
+                                    ],
+                                    function(values){
+                                        // Actualizar el campo tax_id del documento
+                                        frm.set_value("tax_id", values.tax_id);
+                                        frappe.validated = true; // Continuar con la validación
+                                    },
+                                    'Favor proporcionar el RNC / Cédula del proveedor',
+                                    'Actualizar'
+                                );
+                                frappe.validated = false; // Detener el flujo hasta que se proporcione el tax_id
+                            }
+                        }
+                    }
+                });
             }
         }
-    
+        console.log("terminando la validación frm.doc.tax_id", frm.doc.tax_id);
+        if (frm.doc.custom_rnc) {
+            // sólo para saltar la validación en caso de que el campo custom_rnc tenga un valor
+            // y sea proveedor de caja chica, se guardara como campo vacío
+            frm.set_value("tax_id", frm.doc.custom_rnc);
+        }
     },
     refresh: function(frm) {
         // Verificar si los elementos necesarios existen antes de llamar a las funciones
@@ -84,8 +128,53 @@ frappe.ui.form.on('Purchase Invoice', {
         if (frm.isr_account) {
             // handle_checkbox_state(frm);
         }
-    },
+    
+        // Eliminar cualquier evento de clic previo en el campo tax_id
+        frm.get_field('custom_rnc').$wrapper.off('click');
 
+        // Agregar evento de clic al campo tax_id si el proveedor cumple la condición
+        frappe.call({
+            method: 'frappe.client.get',
+            args: {
+                doctype: 'DGII Reports Settings',
+                name: 'DGII Reports Settings'
+            },
+            callback: function(r) {
+                if (r.message) {
+                    const pretty_cash_suppliers = r.message.pretty_cash || [];
+                    const supplier_names = pretty_cash_suppliers.map(supplier => supplier.supplier);
+                    console.log(supplier_names);
+                    console.log(frm.doc.supplier);
+                    // Comparar el proveedor seleccionado con los proveedores en pretty_cash
+                    if (supplier_names.includes(frm.doc.supplier)) {
+                        // Hacer que el campo tax_id sea clicable
+                        frm.get_field('custom_rnc').$wrapper.on('click', function() {
+                            // Solicitar el RNC / Cédula del proveedor
+                            frappe.prompt(
+                                [
+                                    {
+                                        'fieldname': 'tax_id',
+                                        'fieldtype': 'Data',
+                                        'label': 'RNC / Cédula del proveedor 3',
+                                        'reqd': 1,
+                                        'default': frm.doc.custom_rnc
+                                    }
+                                ],
+                                function(values){
+                                    console.log(values);
+                                    console.log(values.tax_id);
+                                    // Actualizar el campo tax_id del documento sin disparar el evento supplier nuevamente
+                                    frm.set_value("custom_rnc", values.tax_id);
+                                },
+                                'Favor proporcionar el RNC / Cédula del proveedor',
+                                'Actualizar'
+                            );
+                        });
+                    }
+                }
+            }
+        });
+    },
     custom_tipo_comprobante: function(frm) {
         if (!frm.doc.supplier) {
             // Si el campo supplier no está seleccionado, mostrar un mensaje de error y rechazar el cambio
@@ -129,10 +218,75 @@ frappe.ui.form.on('Purchase Invoice', {
         update_bill_no_label(frm);
     },
     supplier: function(frm) {
-        // Si el campo supplier cambia, resetear los valores de bill_no, vencimiento_ncf y custom_tipo_comprobante a vacío
+        // Agregar una bandera para evitar que el evento se dispare dos veces
+        if (frm.supplier_event_triggered) {
+            return;
+        }
+        frm.supplier_event_triggered = true;
+    
+        // Limpiar los campos
         frm.set_value('bill_no', '');
         frm.set_value('vencimiento_ncf', '');
         frm.set_value('custom_tipo_comprobante', '');
+        frm.set_value("custom_rnc", '');
+    
+        // Recuperar el campo pretty_cash del doctype DGII Reports Settings
+        frappe.call({
+            method: 'frappe.client.get',
+            args: {
+                doctype: 'DGII Reports Settings',
+                name: 'DGII Reports Settings'
+            },
+            callback: function(r) {
+                if (r.message) {
+                    const pretty_cash_suppliers = r.message.pretty_cash || [];
+                    const supplier_names = pretty_cash_suppliers.map(supplier => supplier.supplier);
+    
+                    // Comparar el proveedor seleccionado con los proveedores en pretty_cash
+                    if (supplier_names.includes(frm.doc.supplier)) {
+                        frm.set_value('tax_id', '');
+                        // Solicitar el RNC / Cédula del proveedor
+                        frappe.prompt(
+                            [
+                                {
+                                    'fieldname': 'tax_id',
+                                    'fieldtype': 'Data',
+                                    'label': 'RNC / Cédula del proveedor 4',
+                                    'reqd': 1
+                                }
+                            ],
+                            function(values){
+                                // Actualizar el campo tax_id del documento sin disparar el evento supplier nuevamente
+                                frm.set_value("tax_id", values.tax_id);
+                                frm.supplier_event_triggered = false; // Restablecer la bandera
+                            },
+                            'Favor proporcionar el RNC / Cédula del proveedor',
+                            'Actualizar'
+                        );
+    
+                        // Establecer el campo tax_id como requerido
+                        frm.set_df_property('tax_id', 'reqd', 1);
+    
+                        // Manejar el caso en que el prompt se cierra sin proporcionar un valor
+                        $(document).on('hidden.bs.modal', '.modal', function () {
+                            if (!$('.modal').hasClass('show')) {
+                                console.log('Modal cerrado');
+                                frm.supplier_event_triggered = false;
+                            }
+                        });
+                        } else {
+                        // Quitar las condiciones si no se cumple la condición
+                        frm.set_df_property('tax_id', 'reqd', 0);
+                        frm.supplier_event_triggered = false; // Restablecer la bandera
+                    }
+                } else {
+                    frm.supplier_event_triggered = false; // Restablecer la bandera en caso de error
+                }
+            },
+            error: function() {
+                frm.supplier_event_triggered = false; // Restablecer la bandera en caso de error
+            }
+        });
     },
     is_return: function(frm) {
         // Sincronizar con el campo custom_tipo_comprobante
@@ -140,9 +294,29 @@ frappe.ui.form.on('Purchase Invoice', {
         update_bill_no_label(frm);
     },
     bill_no: function(frm) {
+        if ([1].includes(frm.doc.bill_no.length)) {
+
+            const tipo_comprobante = frm.doc.custom_tipo_comprobante;
+            if (!tipo_comprobante) {
+                frappe.msgprint(__('Seleccione un tipo de comprobante.'));
+                return;
+            }    
+        }
         // Validar el RNC al cambiar el campo bill_no
         if ([11, 13, 19].includes(frm.doc.bill_no.length)) {
             validate_ncf(frm);
+        }
+    },
+    tax_id: function(frm) {
+        if (frm.doc.tax_id) {
+            setTimeout(() => {
+                frm.set_value("custom_rnc", frm.doc.tax_id).then(() => {
+                    frm.refresh_field('custom_rnc');
+                    frm.set_df_property('custom_rnc', 'read_only', 1); 
+                }).catch(err => {
+                    console.error("Error al establecer custom_rnc:", err);
+                });
+            }, 100); // Ajusta el tiempo de espera según sea necesario
         }
     }
 });
@@ -161,8 +335,10 @@ function synchronize_is_return(frm) {
 
 
 function validate_ncf(frm) {
+    console.log("iniciando validate_ncf");
     const supplier = frm.doc.supplier;
     const bill_no = frm.doc.bill_no.trim().toUpperCase();
+    const custom_rnc = frm.doc.custom_rnc;
     const tipo_comprobante = frm.doc.custom_tipo_comprobante;
 
     if (!tipo_comprobante) {
@@ -188,6 +364,13 @@ function validate_ncf(frm) {
         frm.set_value('bill_no', '');
         return;
     }
+    // Validaciones adicionales basadas en custom_tipo_comprobante
+    if (tipo_comprobante === 'Factura de Consumo' && !bill_no.startsWith('B02')) {
+        frappe.msgprint(__('El NCF para Factura de Consumo debe iniciar con B02.'));
+        frm.set_value('bill_no', '');
+        return;
+    }
+    
     if (tipo_comprobante === 'Notas de Crédito' && !bill_no.startsWith('B04')) {
         frappe.msgprint(__('El NCF para Notas de Crédito debe iniciar con B04.'));
         frm.set_value('bill_no', '');
@@ -204,7 +387,8 @@ function validate_ncf(frm) {
         method: 'dgii_reports.hook.purchase_invoice.validate_ncf',
         args: {
             ncf_number: bill_no,
-            supplier: supplier
+            supplier: supplier,
+            custom_rnc: custom_rnc
         },
         callback: function(r) {
             if (r.message) {

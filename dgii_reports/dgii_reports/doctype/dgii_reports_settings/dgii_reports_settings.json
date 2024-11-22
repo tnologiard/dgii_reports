@@ -34,6 +34,7 @@
   "sales_ncf_list_settings",
   "otras_configuraciones_tab",
   "no_validar_ncf",
+  "pretty_cash",
   "legal_tip_account",
   "itbis_account",
   "column_break_xwjp",
@@ -267,12 +268,19 @@
    "fieldtype": "Table",
    "label": "Ventas",
    "options": "Comprobantes Fiscales Settings"
+  },
+  {
+   "description": "Seleccione los proveedores que se usar\u00e1n como caja chica en la Factura de Compra. Al seleccionar este proveedor en la factura, se solicitar\u00e1 el RNC que desea utilizar y el mismo se visualizar\u00e1 en el reporte 606.",
+   "fieldname": "pretty_cash",
+   "fieldtype": "Table MultiSelect",
+   "label": "Petty Cash Suppliers",
+   "options": "Pretty Cash Suppliers"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-11-12 18:13:49.919349",
+ "modified": "2024-11-22 03:16:58.855492",
  "modified_by": "Administrator",
  "module": "Dgii Reports",
  "name": "DGII Reports Settings",

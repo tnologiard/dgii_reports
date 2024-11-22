@@ -9,18 +9,22 @@ from stdnum.do import ncf
 
 def validate_unique_ncf_by_supplier(doc):
     """Valida que el NCF sea único por suplidor."""
+    print(f"\n\n\nvalidate_unique_ncf_by_supplier: doc.bill_no = {doc.bill_no}, doc.supplier = {doc.supplier}, doc.custom_rnc = {doc.custom_rnc}")
     if not doc.bill_no:
-        frappe.throw("El número de comprobante fiscal es obligatorio.++")
+        frappe.throw("El número de comprobante fiscal es obligatorio.")
 
     filters = {
         "bill_no": doc.bill_no,
         "supplier": doc.supplier,
-        "docstatus": 1
+        "docstatus": 1,
+        "custom_rnc": doc.custom_rnc,
     }
     purchase_invoice = frappe.db.exists("Purchase Invoice", filters)
+
+    print(f"validate_unique_ncf_by_supplier: purchase_invoice = {purchase_invoice}")
     if purchase_invoice:
         purchase_invoice_link = f'<a class="bold" href="/app/purchase-invoice/{purchase_invoice}">{purchase_invoice}</a>'
-        frappe.throw(_("El NCF debe ser único por suplidor. Existe otra factura con este número de comprobante: " + purchase_invoice_link))
+        frappe.throw(_("El NCF debe ser único por suplidor y RNC. Existe otra factura con este número de comprobante y RNC: " + purchase_invoice_link))
 
 
 @frappe.whitelist()
@@ -102,11 +106,12 @@ def validate_unique_ncf(nuevo_ncf, supplier):
     
 
 @frappe.whitelist()
-def validate_ncf(ncf_number, supplier):
+def validate_ncf(ncf_number, supplier, custom_rnc):
     try:
         temp_doc = frappe._dict({
             "bill_no": ncf_number,
-            "supplier": supplier
+            "supplier": supplier,
+            "custom_rnc": custom_rnc,
         })
         validate_unique_ncf_by_supplier(temp_doc)
         return ncf.is_valid(ncf_number)
@@ -116,6 +121,7 @@ def validate_ncf(ncf_number, supplier):
     
 def common_validations(doc):
     """Función que realiza las validaciones comunes."""
+    print(f"common_validations: doc.tax_id (before) = {doc.tax_id}")
     if not doc.custom_tipo_comprobante:
         frappe.throw("Favor seleccionar un tipo de comprobante")
     if not doc.supplier:
@@ -124,15 +130,11 @@ def common_validations(doc):
 
 def validate(doc, event):
     """Función para validar el documento antes de cualquier acción."""
+    print(f"validate: doc.tax_id (before) = {doc.tax_id}")
     common_validations(doc)
 
 def before_save(doc, event):
     """Función que se ejecuta antes de guardar el documento."""
-    common_validations(doc)
-    validate_unique_ncf_by_supplier(doc)
-
-def before_submit(doc, event):
-    """Función que se ejecuta antes de enviar el documento."""
     common_validations(doc)
     validate_unique_ncf_by_supplier(doc)
     if doc.custom_tipo_comprobante in ["Comprobante de Compras", "Comprobante para Gastos Menores"]  and not doc.amended_from:
@@ -146,6 +148,11 @@ def before_submit(doc, event):
     else:
         print(f"before_save: doc.bill_no (after) = {doc.bill_no}")
         validate_against_dgii(doc)
+
+def before_submit(doc, event):
+    """Función que se ejecuta antes de enviar el documento."""
+    common_validations(doc)
+    validate_unique_ncf_by_supplier(doc)
 
 def validate_ncf_with_dgii(rnc, ncf, my_rnc=None, sec_code=None, req_sec_code=False):
     """Valida el NCF con la DGII."""
@@ -196,3 +203,7 @@ def get_custom_tipo_comprobante_options():
 
     # Devolver una lista de opciones únicas manteniendo el orden de la tabla
     return list(dict.fromkeys(options))
+
+@frappe.whitelist()
+def validate_rnc(rnc):
+    return rnc.is_valid(rnc)
