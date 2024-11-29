@@ -73,7 +73,7 @@ frappe.ui.form.on('Purchase Invoice', {
                                         {
                                             'fieldname': 'tax_id',
                                             'fieldtype': 'Data',
-                                            'label': 'RNC / Cédula del proveedor 1',
+                                            'label': 'RNC / Cédula del proveedor',
                                             'reqd': 1
                                         }
                                     ],
@@ -94,7 +94,7 @@ frappe.ui.form.on('Purchase Invoice', {
                                         {
                                             'fieldname': 'tax_id',
                                             'fieldtype': 'Data',
-                                            'label': 'RNC / Cédula del proveedor 2',
+                                            'label': 'RNC / Cédula del proveedor',
                                             'reqd': 1
                                         }
                                     ],
@@ -155,7 +155,7 @@ frappe.ui.form.on('Purchase Invoice', {
                                     {
                                         'fieldname': 'tax_id',
                                         'fieldtype': 'Data',
-                                        'label': 'RNC / Cédula del proveedor 3',
+                                        'label': 'RNC / Cédula del proveedor',
                                         'reqd': 1,
                                         'default': frm.doc.custom_rnc
                                     }
@@ -251,7 +251,7 @@ frappe.ui.form.on('Purchase Invoice', {
                                 {
                                     'fieldname': 'tax_id',
                                     'fieldtype': 'Data',
-                                    'label': 'RNC / Cédula del proveedor 4',
+                                    'label': 'RNC / Cédula del proveedor',
                                     'reqd': 1
                                 }
                             ],
