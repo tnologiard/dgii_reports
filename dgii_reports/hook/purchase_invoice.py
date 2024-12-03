@@ -137,7 +137,13 @@ def before_save(doc, event):
     """Función que se ejecuta antes de guardar el documento."""
     common_validations(doc)
     validate_unique_ncf_by_supplier(doc)
-    if doc.custom_tipo_comprobante in ["Comprobante de Compras", "Comprobante para Gastos Menores"]  and not doc.amended_from:
+
+    # Evitar generar un nuevo NCF si is_opening es "Yes"
+    if not doc.is_opening == "No":
+        print("before_save: is_opening es 'Yes', no se generará un nuevo NCF.")
+        return
+
+    if doc.custom_tipo_comprobante in ["Comprobante de Compras", "Comprobante para Gastos Menores"] and not doc.amended_from:
         conf = get_serie_for_(doc)
         current = cint(conf.secuencia_actual) + 1
         conf.secuencia_actual = current

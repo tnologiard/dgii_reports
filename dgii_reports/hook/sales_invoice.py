@@ -42,6 +42,11 @@ def before_submit(doc, event):
     print(f"before_submit: doc.is_return = {doc.is_return}")
     print(f"before_submit: doc.custom_ncf (before) = {doc.custom_ncf}")
 
+    # Evitar generar un nuevo NCF si is_opening es "Yes"
+    if not doc.is_opening == "No":
+        print("before_submit: is_opening es true, no se generará un nuevo NCF.")
+        return
+
     # Verificar y generar un NCF único
     if not doc.custom_ncf:
         doc.custom_ncf = generate_new(doc)
@@ -89,7 +94,7 @@ def fetch_print_heading_if_missing(doc, go_silently=False):
     doc.db_update()
 
 def validate_customer_tax_id(doc):
-    if doc.base_total >= MAX_VALUE_AVALIABLE:
+    if doc.base_net_total >= MAX_VALUE_AVALIABLE:
         ct = frappe.get_doc('Customer', doc.customer)
         if not ct.tax_id:
             frappe.throw('Para realizar ventas por un monto igual o mayor a los RD$250,000. El cliente debe de tener un RNC o Cédula asociado.')
