@@ -3,7 +3,7 @@ frappe.ui.form.on("Sales Invoice", {
         // Limpiar campos bill_no y vencimiento_ncf si es una nota de débito y está en estado "Nuevo"
         if (frm.doc.is_return && frm.doc.docstatus == 0) {
             synchronize_is_return(frm);
-            frm.trgger('is_return'); 
+            frm.trigger('is_return'); 
         }
         set_custom_tipo_comprobante_options(frm);
 
@@ -52,7 +52,7 @@ function synchronize_is_return(frm) {
             frm.refresh_field('custom_tipo_comprobante');
         });
     } else if (frm.doc.custom_tipo_comprobante === 'Notas de Crédito') {
-        frm.set_value('custom_tipo_comprobante', '').then(() => {
+        frm.set_value('is_return', 1).then(() => {
             frm.refresh_field('custom_tipo_comprobante');
         });
     }
