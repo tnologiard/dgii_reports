@@ -1,4 +1,9 @@
 frappe.ui.form.on('Purchase Invoice', {
+    onload_post_render: function(frm) {        
+        // Ajustar la altura del campo custom_notes
+        $(frm.fields_dict.custom_notes.wrapper).find('textarea').css('height', '75px');
+
+    },
     onload: function(frm) {
         // Obtener el documento DGII Reports Settings
         frappe.db.get_single_value('DGII Reports Settings', 'ret606_isr').then(value => {
@@ -38,6 +43,8 @@ frappe.ui.form.on('Purchase Invoice', {
         update_bill_no_label(frm);
 
         set_custom_tipo_comprobante_options(frm);
+
+        $(frm.fields_dict.custom_notes.wrapper).find('textarea').css('height', '75px');
 
     },
     // Se ejecuta cuando se valida el formulario antes de guardar
@@ -174,6 +181,7 @@ frappe.ui.form.on('Purchase Invoice', {
                 }
             }
         });
+        $(frm.fields_dict.custom_notes.wrapper).find('textarea').css('height', '75px');
     },
     custom_tipo_comprobante: function(frm) {
         if (!frm.doc.supplier) {

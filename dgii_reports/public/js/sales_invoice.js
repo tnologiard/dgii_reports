@@ -6,6 +6,11 @@ frappe.ui.form.on("Sales Invoice", {
             frm.trigger('is_return'); 
         }
         set_custom_tipo_comprobante_options(frm);
+        $(frm.fields_dict.custom_notes.wrapper).find('textarea').css('height', '75px');
+    },
+    onload_post_render: function(frm) {        
+        // Ajustar la altura del campo custom_notes
+        $(frm.fields_dict.custom_notes.wrapper).find('textarea').css('height', '75px');
 
     },
     is_return: function(frm) {
