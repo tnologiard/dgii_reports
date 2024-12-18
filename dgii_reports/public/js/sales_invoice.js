@@ -7,6 +7,11 @@ frappe.ui.form.on("Sales Invoice", {
         }
         set_custom_tipo_comprobante_options(frm);
         $(frm.fields_dict.custom_notes.wrapper).find('textarea').css('height', '75px');
+        
+        // Verificar si es un documento nuevo y el cliente está establecido
+        if (frm.is_new() && frm.doc.customer) {
+            frm.trigger('customer');
+        }
     },
     onload_post_render: function(frm) {        
         // Ajustar la altura del campo custom_notes
@@ -48,7 +53,50 @@ frappe.ui.form.on("Sales Invoice", {
         } else if (frm.doc.custom_tipo_comprobante !== "") {
             frm.set_value('is_return', 0);
         }
-    }
+    },
+    customer: function(frm) {
+        if (frm.doc.customer) {
+            // Recuperar el valor del campo custom_default_fiscal_voucher del Customer
+            frappe.db.get_value('Customer', frm.doc.customer, 'custom_default_fiscal_voucher', function(value) {
+                if (value && value.custom_default_fiscal_voucher) {
+                    const default_fiscal_voucher = value.custom_default_fiscal_voucher;
+
+                    // Recuperar la propiedad tipo_comprobante del Tipo Comprobante Fiscal
+                    frappe.db.get_value('Tipo Comprobante Fiscal', default_fiscal_voucher, 'tipo_comprobante', function(voucher) {
+                        if (voucher && voucher.tipo_comprobante) {
+                            const tipo_comprobante = voucher.tipo_comprobante;
+
+                            // Verificar si el valor existe en el campo select custom_tipo_comprobante
+                            const options = frm.fields_dict.custom_tipo_comprobante.df.options || [];
+                            if (options.includes(tipo_comprobante)) {
+                                // Establecer el valor como seleccionado
+                                frm.set_value('custom_tipo_comprobante', tipo_comprobante);
+                                frappe.show_alert({
+                                    message: __('Se estableció el comprobante fiscal predeterminado del cliente: {0}', [tipo_comprobante]),
+                                    indicator: 'green'
+                                });
+                            } else {
+                                // Lanzar un mensaje de que el comprobante fiscal predeterminado no está configurado
+                                frappe.msgprint(__('El comprobante fiscal predeterminado del cliente es {0}, pero no se ha configurado en DGII Settings para que aparezca en la lista.', [tipo_comprobante]));
+                                frm.set_value('custom_tipo_comprobante', '');
+                            }
+                        } else {
+                            // Reinicializar el campo select custom_tipo_comprobante
+                            frm.set_value('custom_tipo_comprobante', '');
+                            // frappe.msgprint(__('No se encontraron datos para establecer el tipo de comprobante fiscal.'));
+                        }
+                    });
+                } else {
+                    // Reinicializar el campo select custom_tipo_comprobante
+                    frm.set_value('custom_tipo_comprobante', '');
+                    // frappe.msgprint(__('No se encontraron datos para establecer el tipo de comprobante fiscal.'));
+                }
+            });
+        } else {
+            // Reinicializar el campo select custom_tipo_comprobante
+            frm.set_value('custom_tipo_comprobante', '');
+        }
+    },
 });
 
 function synchronize_is_return(frm) {

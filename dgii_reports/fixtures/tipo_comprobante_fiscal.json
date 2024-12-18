@@ -16,14 +16,6 @@
   "tipo_comprobante": "Comprobante para Pagos al Exterior"
  },
  {
-  "codigo": "e-CF",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-08-07 03:54:25.849122",
-  "name": "Comprobante Fiscal Electrónico-e-CF",
-  "tipo_comprobante": "Comprobante Fiscal Electrónico"
- },
- {
   "codigo": "16",
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
@@ -72,14 +64,6 @@
   "tipo_comprobante": "Notas de Crédito"
  },
  {
-  "codigo": "01",
-  "docstatus": 0,
-  "doctype": "Tipo Comprobante Fiscal",
-  "modified": "2024-11-12 06:06:35.927731",
-  "name": "Factura de Crédito Fiscal-01",
-  "tipo_comprobante": "Factura de Crédito Fiscal"
- },
- {
   "codigo": "03",
   "docstatus": 0,
   "doctype": "Tipo Comprobante Fiscal",
@@ -94,5 +78,21 @@
   "modified": "2024-08-07 03:50:53.155431",
   "name": "Factura de Consumo-02",
   "tipo_comprobante": "Factura de Consumo"
+ },
+ {
+  "codigo": "e-CF",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-08-07 03:54:25.849122",
+  "name": "Comprobante Fiscal Electrónico-e-CF",
+  "tipo_comprobante": "Comprobante Fiscal Electrónico"
+ },
+ {
+  "codigo": "01",
+  "docstatus": 0,
+  "doctype": "Tipo Comprobante Fiscal",
+  "modified": "2024-11-12 06:06:35.927731",
+  "name": "Factura de Crédito Fiscal-01",
+  "tipo_comprobante": "Factura de Crédito Fiscal"
  }
 ]
