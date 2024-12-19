@@ -474,7 +474,7 @@ def get_file_address(from_date, to_date, decimal_places=2, include_totals=False,
     LEFT JOIN `tabMode of Payment` AS mop ON pe.mode_of_payment = mop.name
     LEFT JOIN `tabTipo de Ingreso` AS tipo_ing ON sinv.custom_tipo_de_ingreso = tipo_ing.tipo_de_ingreso
     LEFT JOIN `tabSales Taxes and Charges` AS ptc ON sinv.name = ptc.parent
-    WHERE sinv.custom_ncf NOT LIKE 'SINV-%%' AND sinv.docstatus = 1 AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
+    WHERE sinv.custom_ncf NOT LIKE 'SINV-%%' AND sinv.docstatus = 1 AND sinv.custom_is_internal = 0 AND sinv.posting_date BETWEEN %(from_date)s AND %(to_date)s
     GROUP BY sinv.name
 
     UNION
@@ -506,7 +506,7 @@ def get_file_address(from_date, to_date, decimal_places=2, include_totals=False,
     LEFT JOIN `tabTipo de Ingreso` AS tipo_ing ON sinv.custom_tipo_de_ingreso = tipo_ing.tipo_de_ingreso
     LEFT JOIN `tabSales Taxes and Charges` AS ptc ON sinv.name = ptc.parent
     WHERE sinv.custom_ncf NOT LIKE 'SINV-%%' AND sinv.docstatus = 1 AND sinv.outstanding_amount = 0
-    AND sinv.posting_date < %(from_date)s AND pe.posting_date BETWEEN %(from_date)s AND %(to_date)s AND pe.docstatus = 1
+    AND sinv.posting_date < %(from_date)s AND sinv.custom_is_internal = 0 AND pe.posting_date BETWEEN %(from_date)s AND %(to_date)s AND pe.docstatus = 1
     GROUP BY sinv.name
     """
 

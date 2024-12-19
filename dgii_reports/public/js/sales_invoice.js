@@ -3,19 +3,18 @@ frappe.ui.form.on("Sales Invoice", {
         // Limpiar campos bill_no y vencimiento_ncf si es una nota de débito y está en estado "Nuevo"
         if (frm.doc.is_return && frm.doc.docstatus == 0) {
             synchronize_is_return(frm);
-            frm.trigger('is_return'); 
+            // frm.trigger('is_return'); 
         }
         set_custom_tipo_comprobante_options(frm);
-        $(frm.fields_dict.custom_notes.wrapper).find('textarea').css('height', '75px');
         
         // Verificar si es un documento nuevo y el cliente está establecido
-        if (frm.is_new() && frm.doc.customer) {
+        if (frm.is_new() && frm.doc.customer && !frm.doc.is_return) {
             frm.trigger('customer');
         }
     },
     onload_post_render: function(frm) {        
         // Ajustar la altura del campo custom_notes
-        $(frm.fields_dict.custom_notes.wrapper).find('textarea').css('height', '75px');
+        adjustTextAreaHeight(frm, ['custom_notes'], '75px');
 
     },
     is_return: function(frm) {
@@ -52,6 +51,7 @@ frappe.ui.form.on("Sales Invoice", {
             frm.set_value('is_return', 1);
         } else if (frm.doc.custom_tipo_comprobante !== "") {
             frm.set_value('is_return', 0);
+            frm.set_value('custom_is_internal', 0);
         }
     },
     customer: function(frm) {
@@ -97,6 +97,16 @@ frappe.ui.form.on("Sales Invoice", {
             frm.set_value('custom_tipo_comprobante', '');
         }
     },
+    custom_is_internal: function(frm) {
+        if (frm.doc.custom_is_internal) {
+            // Limpiar los campos custom_ncf y custom_ncf_valido_hasta
+            frm.set_value('custom_ncf', '');
+            frm.set_value('custom_ncf_valido_hasta', '');
+        } else {
+            // Disparar la rutina de custom_tipo_comprobante
+            frm.trigger('custom_tipo_comprobante');
+        }
+    }
 });
 
 function synchronize_is_return(frm) {
@@ -110,11 +120,6 @@ function synchronize_is_return(frm) {
         });
     }
 }
-frappe.ui.form.on('Sales Invoice', {
-    onload: function(frm) {
-        set_custom_tipo_comprobante_options(frm);
-    }
-});
 
 function set_custom_tipo_comprobante_options(frm) {
     frappe.call({
@@ -123,6 +128,14 @@ function set_custom_tipo_comprobante_options(frm) {
             if (r.message) {
                 frm.set_df_property('custom_tipo_comprobante', 'options', r.message);
             }
+        }
+    });
+}
+
+function adjustTextAreaHeight(frm, fieldNames, height) {
+    fieldNames.forEach(fieldName => {
+        if (frm.fields_dict[fieldName]) {
+            $(frm.fields_dict[fieldName].wrapper).find('textarea').css('height', height);
         }
     });
 }

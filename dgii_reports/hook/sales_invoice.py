@@ -60,6 +60,11 @@ def before_submit(doc, event):
         doc.custom_ncf = '{0}{1}{2:08d}'.format(conf.serie.split(".")[0], frappe.get_doc("Tipo Comprobante Fiscal", conf.document_type).codigo, current)
         doc.vencimiento_ncf = conf.expira_el
         print(f"before_save: Se ha generado un nuevo NCF = {doc.custom_ncf}")
+    
+    if doc.custom_is_internal:
+        doc.custom_ncf = ''
+        doc.vencimiento_ncf = ''
+        print(f"before_submit: Se ha dejado el NCF vacío = {doc.custom_ncf}")
 
     print(f"before_submit: doc.custom_ncf (after) = {doc.custom_ncf}")
 
