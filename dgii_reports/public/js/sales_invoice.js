@@ -8,7 +8,7 @@ frappe.ui.form.on("Sales Invoice", {
         set_custom_tipo_comprobante_options(frm);
         
         // Verificar si es un documento nuevo y el cliente está establecido
-        if (frm.is_new() && frm.doc.customer && !frm.doc.is_return) {
+        if (frm.is_new() && frm.doc.customer && !frm.doc.is_return && !frm.doc.amended_from) {
             frm.trigger('customer');
         }
     },
